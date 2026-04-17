@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Euler's Method — How the Calculation Works</title>
+  <style>
+
+    /* ── Reset & base ─────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #f5f6fa;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      color: #1e2230;
+      padding: 32px 16px 64px;
+      line-height: 1.7;
+    }
+
+    /* ── Page header ─────────────────────────────────────── */
+    .page-header {
+      max-width: 780px;
+      margin: 0 auto 36px;
+    }
+
+    /* Back button — top-left */
+    .btn-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      background: #fff;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #374151;
+      text-decoration: none;
+      margin-bottom: 28px;
+      transition: background 0.15s;
+    }
+    .btn-back:hover { background: #f3f4f6; }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      line-height: 1.2;
+    }
+
+    h1 .accent { color: #4f6ef7; }
+
+    .page-header p {
+      margin-top: 10px;
+      font-size: 1rem;
+      color: #6b7280;
+      max-width: 600px;
+    }
+
+    /* ── Section cards ───────────────────────────────────── */
+    .section {
+      max-width: 780px;
+      margin: 0 auto 24px;
+      background: #fff;
+      border-radius: 14px;
+      padding: 30px 32px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.07);
+    }
+
+    .section h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Numbered circle next to each section heading */
+    .section-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #4f6ef7;
+      color: #fff;
+      font-size: 0.82rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .section p { margin-bottom: 12px; color: #374151; }
+    .section p:last-child { margin-bottom: 0; }
+
+    /* ── Inline formula (dark pill) ──────────────────────── */
+    .formula-pill {
+      display: inline-block;
+      background: #1e2230;
+      color: #e2e8f0;
+      border-radius: 8px;
+      padding: 3px 10px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.88rem;
+    }
+
+    .formula-pill .fv { color: #93c5fd; }
+
+    /* ── Centred display formula box ─────────────────────── */
+    .formula-block {
+      background: #1e2230;
+      color: #e2e8f0;
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin: 18px 0;
+      text-align: center;
+    }
+
+    .formula-block .formula-line {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      font-size: 1.05rem;
+    }
+
+    .formula-block .caption {
+      font-size: 0.78rem;
+      color: #94a3b8;
+      margin-top: 10px;
+    }
+
+    /* Stacked fraction */
+    .frac {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      font-size: 0.9rem;
+      line-height: 1.2;
+      margin: 0 2px;
+    }
+    .frac .bar {
+      width: 100%;
+      border-top: 1.5px solid #e2e8f0;
+      margin: 2px 0;
+    }
+
+    /* Large parentheses */
+    .lparen, .rparen {
+      font-size: 1.6rem;
+      line-height: 1;
+      font-weight: 300;
+    }
+
+    .fv { color: #93c5fd; }
+
+    /* ── Step-by-step code walkthrough ───────────────────── */
+    .code-steps { margin-top: 6px; }
+
+    /* Each annotated code step */
+    .code-step {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      align-items: start;
+      padding: 16px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .code-step:last-child { border-bottom: none; }
+
+    /* The code snippet on the left */
+    .code-snippet {
+      background: #1e2230;
+      color: #e2e8f0;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.82rem;
+      line-height: 1.6;
+      overflow-x: auto;
+    }
+
+    /* Syntax highlighting colours */
+    .kw  { color: #c084fc; } /* keywords: const, let, for */
+    .fn  { color: #67e8f9; } /* function names */
+    .str { color: #86efac; } /* strings / expressions */
+    .cm  { color: #6b7280; } /* comments */
+    .num { color: #fbbf24; } /* numbers */
+
+    /* The plain-English explanation on the right */
+    .code-explain {
+      font-size: 0.88rem;
+      color: #374151;
+      padding-top: 4px;
+    }
+
+    .code-explain strong {
+      display: block;
+      font-size: 0.9rem;
+      margin-bottom: 4px;
+      color: #1e2230;
+    }
+
+    /* ── Accuracy / error section ────────────────────────── */
+    .accuracy-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+      margin-top: 16px;
+    }
+
+    .accuracy-card {
+      background: #f3f6ff;
+      border-radius: 10px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .accuracy-card .big-h {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: #4f6ef7;
+      font-family: 'Courier New', monospace;
+    }
+
+    .accuracy-card p {
+      font-size: 0.8rem;
+      color: #6b7280;
+      margin-top: 4px;
+      margin-bottom: 0;
+    }
+
+    /* ── Callout box ─────────────────────────────────────── */
+    .callout {
+      background: #f0f4ff;
+      border-left: 4px solid #4f6ef7;
+      border-radius: 0 10px 10px 0;
+      padding: 14px 18px;
+      margin: 16px 0;
+      font-size: 0.9rem;
+      color: #374151;
+    }
+
+    .callout strong { color: #1e2230; }
+
+    /* ── Responsive: stack code steps on small screens ───── */
+    @media (max-width: 600px) {
+      .code-step { grid-template-columns: 1fr; }
+      .section   { padding: 22px 18px; }
+      h1         { font-size: 1.5rem; }
+    }
+
+  </style>
+</head>
+<body>
+
+  <!-- ── Page header ──────────────────────────────────────── -->
+  <div class="page-header">
+    <!-- Back link to the calculator -->
+    <a class="btn-back" href="euler_calculator.html">&#8592; Back to Calculator</a>
+    <a class="btn-back" href="applications.html" style="margin-left:8px;">🌍 Applications</a>
+
+    <h1>How the <span class="accent">Calculation</span> Works</h1>
+    <p>
+      A step-by-step explanation of the mathematics behind Euler's method
+      and exactly how the code turns that maths into numbers.
+    </p>
+  </div>
+
+
+  <!-- ── Section 1: The core idea ─────────────────────────── -->
+  <section class="section">
+    <h2><span class="section-num">1</span> The Core Idea</h2>
+
+    <p>
+      A <strong>first-order differential equation</strong> like
+      <span class="formula-pill">d<span class="fv">y</span>/d<span class="fv">x</span> = f(<span class="fv">x</span>, <span class="fv">y</span>)</span>
+      tells you the <em>slope</em> of the unknown curve y(x) at every point —
+      but it does not tell you the curve itself directly.
+    </p>
+
+    <p>
+      Euler's method builds an approximation by starting at a known point (x₀, y₀)
+      and repeatedly walking a small distance h along the current slope.
+      Each step produces a new approximate point on the curve.
+    </p>
+
+    <div class="callout">
+      <strong>Analogy:</strong> Imagine you are hiking in fog and can only see the ground
+      directly beneath your feet. You check your compass (the slope), take one small step in
+      that direction, then check again. The smaller each step, the closer you stay to the true path.
+    </div>
+  </section>
+
+
+  <!-- ── Section 2: Where the formula comes from ──────────── -->
+  <section class="section">
+    <h2><span class="section-num">2</span> Where the Formula Comes From</h2>
+
+    <p>
+      The definition of a derivative says that for small h:
+    </p>
+
+    <!-- dy/dx ≈ (y₁ - y₀) / h -->
+    <div class="formula-block">
+      <div class="formula-line">
+        <span class="lparen">(</span>
+        <span class="frac">
+          <span>d<span class="fv">y</span></span>
+          <span class="bar"></span>
+          <span>d<span class="fv">x</span></span>
+        </span>
+        <span class="rparen">)</span>
+        <sub style="color:#e2e8f0; font-size:0.7rem; position:relative; top:0.45em;">0</sub>
+        &nbsp;&#8776;&nbsp;
+        <span>
+          <span class="frac">
+            <span><span class="fv">y</span><sub>1</sub> &minus; <span class="fv">y</span><sub>0</sub></span>
+            <span class="bar"></span>
+            <span><span class="fv">h</span></span>
+          </span>
+        </span>
+      </div>
+      <div class="caption">The slope at a point ≈ rise over run for a small step h</div>
+    </div>
+
+    <p>
+      Rearranging to solve for y₁ gives us the <strong>Euler update rule</strong>:
+    </p>
+
+    <!-- y_{r+1} ≈ y_r + h · (dy/dx)_r -->
+    <div class="formula-block">
+      <div class="formula-line">
+        <span><span class="fv">y</span><sub>r+1</sub></span>
+        &nbsp;&#8776;&nbsp;
+        <span><span class="fv">y</span><sub>r</sub></span>
+        &nbsp;+&nbsp;
+        <span><span class="fv">h</span></span>
+        <span class="lparen">(</span>
+        <span class="frac">
+          <span>d<span class="fv">y</span></span>
+          <span class="bar"></span>
+          <span>d<span class="fv">x</span></span>
+        </span>
+        <span class="rparen">)</span>
+        <sub style="color:#e2e8f0; font-size:0.7rem; position:relative; top:0.45em;">r</sub>
+        &nbsp;&nbsp;
+        <span style="color:#94a3b8; font-size:0.82rem;">,&nbsp; r = 0, 1, 2, &hellip;</span>
+      </div>
+      <div class="caption">
+        New y = old y + (step size) × (slope at old point)
+      </div>
+    </div>
+
+    <p>
+      At the same time x advances by one step:
+      <span class="formula-pill"><span class="fv">x</span><sub>r+1</sub> = <span class="fv">x</span><sub>r</sub> + <span class="fv">h</span></span>.
+      These two updates together are the entire algorithm.
+    </p>
+  </section>
+
+
+  <!-- ── Section 3: How the code does it ──────────────────── -->
+  <section class="section">
+    <h2><span class="section-num">3</span> How the Code Does It</h2>
+
+    <p>
+      Below is a walkthrough of the key JavaScript functions in the calculator,
+      matched with the maths they implement.
+    </p>
+
+    <div class="code-steps">
+
+      <!-- Step A: preprocessExpression -->
+      <div class="code-step">
+        <div class="code-snippet">
+<span class="cm">// Turn "2xy" into "2*x*y"</span>
+<span class="kw">function</span> <span class="fn">preprocessExpression</span>(expr) {
+  expr = expr.<span class="fn">replace</span>(<span class="str">/(\d)([a-zA-Z(])/g</span>, <span class="str">'$1*$2'</span>);
+  expr = expr.<span class="fn">replace</span>(<span class="str">/([a-zA-Z])([a-zA-Z])/g</span>, <span class="str">'$1*$2'</span>);
+  expr = expr.<span class="fn">replace</span>(<span class="str">/\^/g</span>, <span class="str">'**'</span>);
+  <span class="kw">return</span> expr;
+}
+        </div>
+        <div class="code-explain">
+          <strong>Translate maths notation into JavaScript</strong>
+          The user types natural maths like <code>2xy</code> or <code>x^2</code>.
+          JavaScript doesn't understand implicit multiplication or the caret,
+          so this function rewrites them as <code>2*x*y</code> and <code>x**2</code>
+          before the expression is evaluated.
+        </div>
+      </div>
+
+      <!-- Step B: evaluateSlope -->
+      <div class="code-step">
+        <div class="code-snippet">
+<span class="cm">// Compute f(x, y) at one point</span>
+<span class="kw">function</span> <span class="fn">evaluateSlope</span>(expression, xValue, yValue) {
+  <span class="kw">const</span> x = xValue;
+  <span class="kw">const</span> y = yValue;
+  <span class="kw">const</span> clean = <span class="fn">preprocessExpression</span>(expression);
+  <span class="kw">return new</span> <span class="fn">Function</span>(<span class="str">'x'</span>, <span class="str">'y'</span>,
+    <span class="str">'return ('</span> + clean + <span class="str">')'</span>)(x, y);
+}
+        </div>
+        <div class="code-explain">
+          <strong>Evaluate the slope f(xᵣ, yᵣ)</strong>
+          This is the right-hand side of the differential equation —
+          the slope of the curve at the current point.
+          <code>new Function</code> safely compiles and runs the user's
+          expression as live JavaScript with <code>x</code> and <code>y</code>
+          bound to the current values.
+        </div>
+      </div>
+
+      <!-- Step C: the Euler loop -->
+      <div class="code-step">
+        <div class="code-snippet">
+<span class="cm">// The main Euler loop</span>
+<span class="kw">for</span> (<span class="kw">let</span> r = <span class="num">1</span>; r &lt;= totalSteps; r++) {
+  <span class="kw">const</span> slope =
+    <span class="fn">evaluateSlope</span>(expr, currentX, currentY);
+
+  currentY = currentY + stepSize * slope;
+  currentX = currentX + stepSize;
+
+  points.<span class="fn">push</span>({ step: r,
+    x: currentX, y: currentY });
+}
+        </div>
+        <div class="code-explain">
+          <strong>The iterative update — the heart of Euler's method</strong>
+          Each iteration applies the two update rules:
+          <br><br>
+          <code>currentY += h · f(xᵣ, yᵣ)</code> &nbsp;→&nbsp; y<sub>r+1</sub> ≈ y<sub>r</sub> + h·(dy/dx)<sub>r</sub>
+          <br>
+          <code>currentX += h</code> &nbsp;→&nbsp; x<sub>r+1</sub> = x<sub>r</sub> + h
+          <br><br>
+          The result of every step is saved so the table and graph can show the full path.
+        </div>
+      </div>
+
+      <!-- Step D: reference curve -->
+      <div class="code-step">
+        <div class="code-snippet">
+<span class="cm">// Reference curve — built once, fixed</span>
+<span class="kw">const</span> xRange = totalSteps * stepSize * <span class="num">4</span>;
+<span class="kw">const</span> fineH  = xRange / <span class="num">2000</span>;
+<span class="kw">const</span> refPoints =
+  <span class="fn">runEulersMethod</span>(
+    expr, startX, startY,
+    fineH, <span class="num">2000</span>
+  );
+        </div>
+        <div class="code-explain">
+          <strong>The dark purple "reference" curve</strong>
+          This isn't the true analytical solution — it's Euler's method run
+          once with 2000 very fine steps, covering 4× the initial x-range.
+          It is computed only when the equation or initial conditions change,
+          so it stays completely fixed as you drag the step-size slider.
+          This lets you watch the blue Euler approximation improve or
+          deteriorate relative to a stable reference line.
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- ── Section 4: Accuracy and step size ────────────────── -->
+  <section class="section">
+    <h2><span class="section-num">4</span> Accuracy and Step Size</h2>
+
+    <p>
+      Euler's method makes an error at every step because it walks in a straight line
+      along the slope, while the true curve is bent. The error per step is roughly
+      proportional to <strong>h²</strong>, and since there are 1/h steps, the
+      <em>total</em> accumulated error is proportional to <strong>h</strong>.
+    </p>
+
+    <p>
+      This means halving h roughly halves the final error — a first-order method.
+      Use the slider in the calculator to see this directly:
+    </p>
+
+    <div class="accuracy-grid">
+      <div class="accuracy-card">
+        <div class="big-h">h = 1.0</div>
+        <p>Very coarse — large visible gap between the two curves</p>
+      </div>
+      <div class="accuracy-card">
+        <div class="big-h">h = 0.1</div>
+        <p>Reasonable — curves close but still a noticeable gap</p>
+      </div>
+      <div class="accuracy-card">
+        <div class="big-h">h = 0.01</div>
+        <p>Fine — curves nearly overlap on screen</p>
+      </div>
+    </div>
+
+    <div class="callout" style="margin-top:18px;">
+      <strong>Why not always use a tiny h?</strong>
+      More steps means more floating-point arithmetic, and rounding errors can
+      accumulate. For most practical problems a step size between 0.01 and 0.1
+      gives a good balance of accuracy and speed.
+    </div>
+  </section>
+
+
+  <!-- ── Section 5: The (dy/dx)ᵣ column ──────────────────── -->
+  <section class="section">
+    <h2><span class="section-num">5</span> What the (dy/dx)ᵣ Column Shows</h2>
+
+    <p>
+      The fourth column in the results table shows
+      <span class="formula-pill">(d<span class="fv">y</span>/d<span class="fv">x</span>)<sub>r</sub> = f(<span class="fv">x</span><sub>r</sub>, <span class="fv">y</span><sub>r</sub>)</span>
+      — the slope of the approximated curve at each step point.
+    </p>
+
+    <p>
+      This value is what multiplies h in the update rule. A large slope means
+      the curve is changing quickly and a large step will overshoot more.
+      Watching the slope column grow (for equations like x + y) helps explain
+      why accuracy degrades at later steps — the curve is bending faster than
+      the straight-line steps can keep up.
+    </p>
+  </section>
+
+
+  <!-- ── Section 6: Limitations ───────────────────────────── -->
+  <section class="section">
+    <h2><span class="section-num">6</span> Limitations of Euler's Method</h2>
+
+    <p>
+      Euler's method is the simplest numerical ODE solver but it has well-known
+      weaknesses:
+    </p>
+
+    <ul style="padding-left:20px; color:#374151; font-size:0.93rem; line-height:2;">
+      <li><strong>First-order accuracy</strong> — halving h only halves the error. Methods like Runge-Kutta 4 achieve fourth-order accuracy (error ∝ h⁴).</li>
+      <li><strong>Instability</strong> — for some equations (especially stiff ones) the approximation can blow up even with small h.</li>
+      <li><strong>One-directional</strong> — this implementation only steps in the positive x direction. Stepping backwards requires a negative h.</li>
+      <li><strong>First-order ODEs only</strong> — higher-order equations (e.g. y″ = f) must be rewritten as a system of first-order equations first.</li>
+    </ul>
+  </section>
+
+
+  <!-- Page footer -->
+  <footer style="text-align:center; padding: 24px 16px 32px; font-size:0.82rem; color:#9ca3af; max-width:780px; margin:0 auto;">
+    Built by <strong style="color:#4f6ef7;">Emilio Rosa-Ainsworth</strong>
+  </footer>
+</body>
+</html>

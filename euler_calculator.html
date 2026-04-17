@@ -1,0 +1,1469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- Set character encoding for the page -->
+  <meta charset="UTF-8" />
+  <!-- Make the page responsive on mobile screens -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Title shown in the browser tab -->
+  <title>Euler's Method Calculator</title>
+
+  <style>
+    /* ── Reset & Base ───────────────────────────────────────────── */
+
+    /* Remove default margin/padding and use border-box sizing everywhere */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* Set a clean background, font stack, and text colour for the whole page */
+    body {
+      background: #f5f6fa;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      color: #1e2230;
+      min-height: 100vh;
+      padding: 24px 16px 48px;
+    }
+
+    /* ── Page header ───────────────────────────────────────────── */
+
+    /* Centred page title area */
+    .page-header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    /* Main title style */
+    .page-header h1 {
+      font-size: 1.9rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      color: #1e2230;
+    }
+
+    /* Subtitle underneath the main title */
+    .page-header p {
+      margin-top: 6px;
+      font-size: 0.95rem;
+      color: #6b7280;
+    }
+
+    /* Button that links to the explanation page */
+    .btn-explain {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      margin-top: 14px;
+      padding: 9px 18px;
+      background: #1e2230;
+      color: #fff;
+      border-radius: 9px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .btn-explain:hover  { background: #374151; }
+    .btn-explain:active { transform: scale(0.97); }
+
+    /* Accent colour for the highlighted word in the title */
+    .accent {
+      color: #4f6ef7;
+    }
+
+    /* ── Top two-column layout ─────────────────────────────────── */
+
+    /* Flex container that holds the input panel and the graph panel side-by-side */
+    .top-row {
+      display: flex;
+      gap: 20px;
+      max-width: 1100px;
+      margin: 0 auto 24px;
+      flex-wrap: wrap;          /* wrap to single column on small screens */
+    }
+
+    /* ── Shared card style ─────────────────────────────────────── */
+
+    /* White rounded card used for every major UI block */
+    .card {
+      background: #ffffff;
+      border-radius: 14px;
+      padding: 24px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.07);
+    }
+
+    /* ── Left panel – inputs ───────────────────────────────────── */
+
+    /* Input panel takes a fixed width; graph panel takes the rest */
+    .panel-inputs {
+      flex: 0 0 300px;          /* do not grow or shrink; stay at 300 px */
+    }
+
+    /* Section heading inside a card */
+    .card h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 18px;
+      color: #374151;
+    }
+
+    /* Vertical stack for each label + input pair */
+    .field {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 14px;
+    }
+
+    /* Label text above an input */
+    .field label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 5px;
+    }
+
+    /* Text / number input styling */
+    .field input {
+      padding: 9px 12px;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      color: #1e2230;
+      transition: border-color 0.2s;
+      outline: none;
+      font-family: 'Courier New', monospace; /* monospace looks nice for maths */
+    }
+
+    /* Highlight border when the user focuses an input */
+    .field input:focus {
+      border-color: #4f6ef7;
+    }
+
+    /* Primary action button */
+    .btn-calculate {
+      width: 100%;
+      padding: 11px;
+      background: #4f6ef7;
+      color: #fff;
+      border: none;
+      border-radius: 9px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 6px;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    /* Darken the button slightly on hover */
+    .btn-calculate:hover {
+      background: #3b5bdb;
+    }
+
+    /* Slight press effect on click */
+    .btn-calculate:active {
+      transform: scale(0.98);
+    }
+
+    /* Divider line between the main controls and the navigation widget */
+    .nav-divider {
+      border: none;
+      border-top: 1px solid #e5e7eb;
+      margin: 16px 0 14px;
+    }
+
+    /* Row that holds the step number input and the rocket button side by side */
+    .nav-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    /* The step-number input inside the nav row — shrinks to share space with the button */
+    .nav-row input {
+      flex: 1 1 0;
+      padding: 9px 10px;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      color: #1e2230;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    /* Highlight border when the step input is focused */
+    .nav-row input:focus { border-color: #4f6ef7; }
+
+    /* The rocket navigation button */
+    .btn-goto {
+      flex: 0 0 auto;
+      padding: 9px 13px;
+      background: #1e2230;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    /* Slightly lighter on hover */
+    .btn-goto:hover  { background: #374151; }
+    /* Press effect */
+    .btn-goto:active { transform: scale(0.97); }
+
+    /* Small message shown below the nav row (success or error) */
+    .nav-msg {
+      margin-top: 7px;
+      font-size: 0.82rem;
+      min-height: 16px;
+      color: #6b7280;
+    }
+
+    /* ── Step-size slider ──────────────────────────────────────── */
+
+    /* Wrapper that holds the accuracy labels and the slider track */
+    .slider-wrapper {
+      margin-top: 10px;
+    }
+
+    /* Row showing "More accurate" on the left and "Less accurate" on the right */
+    .slider-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.72rem;
+      color: #9ca3af;
+      margin-bottom: 4px;
+    }
+
+    /* The range input itself — styled to use the accent colour */
+    .slider-h {
+      width: 100%;
+      accent-color: #4f6ef7;
+      cursor: pointer;
+    }
+
+    /* Live readout showing the current h value next to the slider */
+    .slider-readout {
+      text-align: center;
+      font-size: 0.8rem;
+      color: #6b7280;
+      margin-top: 4px;
+    }
+
+    /* Highlight the readout value in the accent colour */
+    .slider-readout strong {
+      color: #4f6ef7;
+      font-variant-numeric: tabular-nums; /* stop the number jumping around */
+    }
+
+    /* Small red error message shown below the button when input is invalid */
+    .error-msg {
+      margin-top: 10px;
+      font-size: 0.85rem;
+      color: #ef4444;
+      min-height: 18px;         /* reserve space so layout does not jump */
+    }
+
+    /* ── Right panel – graph ───────────────────────────────────── */
+
+    /* Graph panel fills remaining horizontal space */
+    .panel-graph {
+      flex: 1 1 400px;          /* grow to fill space; shrink if needed */
+      min-width: 0;             /* allow flex item to shrink below content size */
+    }
+
+    /* The canvas element that we draw the graph on */
+    #graphCanvas {
+      display: block;
+      width: 100%;              /* CSS width scales the canvas element */
+      border-radius: 8px;
+      overflow: hidden;         /* clip the grey background to rounded corners */
+    }
+
+    /* ── Results table ─────────────────────────────────────────── */
+
+    /* Full-width card below the two panels */
+    .panel-table {
+      max-width: 1100px;
+      margin: 0 auto 24px;
+    }
+
+    /* Scroll wrapper so the table stays within the card on small screens */
+    .table-scroll {
+      overflow-x: auto;
+    }
+
+    /* The data table itself */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    /* Header and data cells share base padding and alignment */
+    th, td {
+      padding: 10px 16px;
+      text-align: right;        /* numbers look better right-aligned */
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    /* Left-align the Step column header */
+    th:first-child, td:first-child {
+      text-align: center;
+    }
+
+    /* Header row styling */
+    thead th {
+      background: #f3f4f6;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #6b7280;
+      font-weight: 700;
+    }
+
+    /* Alternating row background for readability */
+    tbody tr:nth-child(even) {
+      background: #fafafa;
+    }
+
+    /* Highlighted style for the initial row (step 0) */
+    tbody tr.initial-row td {
+      color: #4f6ef7;
+      font-weight: 600;
+    }
+
+    /* Placeholder text shown before the first calculation */
+    .table-placeholder {
+      text-align: center;
+      padding: 28px;
+      color: #9ca3af;
+      font-size: 0.9rem;
+    }
+
+    /* ── How It Works section ──────────────────────────────────── */
+
+    /* Full-width explanatory card at the bottom */
+    .panel-howto {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    /* The explanation is a two-column grid of step cards */
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-top: 14px;
+    }
+
+    /* Individual numbered step card */
+    .step-card {
+      background: #f3f6ff;
+      border-radius: 10px;
+      padding: 16px;
+    }
+
+    /* Circled step number */
+    .step-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #4f6ef7;
+      color: #fff;
+      font-size: 0.8rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    /* Bold title inside each step card */
+    .step-card strong {
+      display: block;
+      font-size: 0.9rem;
+      margin-bottom: 4px;
+      color: #1e2230;
+    }
+
+    /* Body text inside each step card */
+    .step-card p {
+      font-size: 0.82rem;
+      color: #4b5563;
+      line-height: 1.5;
+    }
+
+    /* The update formula displayed prominently */
+    .formula-box {
+      background: #1e2230;
+      color: #e2e8f0;
+      border-radius: 10px;
+      padding: 20px 28px;
+      margin-top: 18px;
+      text-align: center;
+    }
+
+    /* Small intro line above the main formula */
+    .formula-box .formula-intro {
+      font-size: 0.82rem;
+      color: #94a3b8;
+      margin-bottom: 14px;
+      font-style: italic;
+    }
+
+    /* The main rendered formula line */
+    .formula-box .formula-line {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      font-size: 1.05rem;
+    }
+
+    /* The dy/dx fraction rendered as a proper stacked fraction */
+    .formula-frac {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      font-size: 0.88rem;
+      line-height: 1.2;
+      margin: 0 1px;
+    }
+
+    /* Horizontal bar between numerator and denominator */
+    .formula-frac .frac-bar {
+      width: 100%;
+      border-top: 1.5px solid #e2e8f0;
+      margin: 2px 0;
+    }
+
+    /* Parentheses wrapping the fraction — slightly larger than the fraction itself */
+    .formula-paren {
+      font-size: 1.6rem;
+      line-height: 1;
+      color: #e2e8f0;
+      font-weight: 300;
+    }
+
+    /* Blue accent for variable names */
+    .fv { color: #93c5fd; }
+
+    /* The r = 0, 1, 2, … annotation at the end */
+    .formula-rhs {
+      font-size: 0.82rem;
+      color: #94a3b8;
+      margin-left: 4px;
+    }
+
+  </style>
+</head>
+<body>
+
+  <!-- ── Page header ──────────────────────────────────────────── -->
+  <header class="page-header">
+    <!-- Main page title with a coloured accent word -->
+    <h1>Euler's Method <span class="accent">Calculator</span></h1>
+    <!-- Brief description of what the tool does -->
+    <p>Numerically approximate solutions to ordinary differential equations, step by step.</p>
+    <!-- Links to the companion pages -->
+    <a class="btn-explain" href="explanation.html" target="_blank">
+      📖 How does the calculation work?
+    </a>
+    <a class="btn-explain" href="applications.html" target="_blank" style="background:#1a3a5c; margin-left:8px;">
+      🌍 Real-world applications
+    </a>
+  </header>
+
+  <!-- ── Top row: input panel + graph panel ───────────────────── -->
+  <div class="top-row">
+
+    <!-- LEFT PANEL – user inputs -->
+    <section class="card panel-inputs">
+      <!-- Section heading -->
+      <h2>Parameters</h2>
+
+      <!-- Input: the differential equation dy/dx as a JS expression -->
+      <div class="field">
+        <label for="inputEquation">dy/dx = f(x, y)</label>
+        <input id="inputEquation" type="text" value="x + y"
+               placeholder="e.g. sin(x) + y" />
+      </div>
+
+      <!-- Input: starting x value (x₀) -->
+      <div class="field">
+        <label for="inputX0">Initial x₀</label>
+        <input id="inputX0" type="number" value="0" step="any" />
+      </div>
+
+      <!-- Input: starting y value (y₀) -->
+      <div class="field">
+        <label for="inputY0">Initial y₀</label>
+        <input id="inputY0" type="number" value="1" step="any" />
+      </div>
+
+      <!-- Input: step size h (number box + live slider) -->
+      <div class="field">
+        <label for="inputH">Step size h</label>
+        <input id="inputH" type="number" value="0.1" step="any" />
+        <!-- Slider lets the user drag to adjust h and instantly see accuracy change -->
+        <div class="slider-wrapper">
+          <!-- Endpoint labels so the user knows which direction improves accuracy -->
+          <div class="slider-labels">
+            <span>&#8592; More accurate</span>
+            <span>Less accurate &#8594;</span>
+          </div>
+          <!-- The range runs from 0.01 (very fine) to 1.0 (very coarse) on a log scale via JS -->
+          <input id="sliderH" class="slider-h" type="range" min="0" max="100" value="30"
+                 oninput="handleSliderH(this.value)" />
+          <!-- Live readout: h = 0.1 -->
+          <div class="slider-readout">h = <strong id="sliderHReadout">0.1000</strong></div>
+        </div>
+      </div>
+
+      <!-- Input: how many steps to compute -->
+      <div class="field">
+        <label for="inputSteps">Number of steps</label>
+        <input id="inputSteps" type="number" value="10" min="1" max="500" />
+      </div>
+
+      <!-- Trigger button -->
+      <button class="btn-calculate" onclick="handleCalculate()">
+        Calculate
+      </button>
+
+      <!-- Error message area (empty until an error occurs) -->
+      <p class="error-msg" id="errorMsg"></p>
+
+      <!-- Divider separating the main controls from the navigation widget -->
+      <hr class="nav-divider" />
+
+      <!-- Navigation widget: enter a step number and fly to that point -->
+      <div class="field" style="margin-bottom:8px">
+        <label for="inputGotoStep">🚀 Take me to a point</label>
+      </div>
+      <div class="nav-row">
+        <!-- Input for the step number to navigate to -->
+        <input id="inputGotoStep" type="number" min="0" placeholder="Step #"
+               onkeydown="if(event.key==='Enter') handleGoto()" />
+        <!-- Button that triggers the navigation -->
+        <button class="btn-goto" onclick="handleGoto()">Go 🚀</button>
+      </div>
+      <!-- Feedback message shown after a goto attempt -->
+      <p class="nav-msg" id="navMsg"></p>
+    </section>
+
+    <!-- RIGHT PANEL – canvas graph -->
+    <section class="card panel-graph">
+      <!-- Section heading -->
+      <h2>Graph</h2>
+      <!-- Canvas element; actual pixel size is set in JS for sharpness -->
+      <canvas id="graphCanvas"></canvas>
+    </section>
+
+  </div>
+
+  <!-- ── Results table ────────────────────────────────────────── -->
+  <section class="card panel-table">
+    <!-- Section heading -->
+    <h2>Results Table</h2>
+    <!-- Horizontal scroll wrapper for narrow screens -->
+    <div class="table-scroll">
+      <!-- The table is built dynamically by JS; show placeholder initially -->
+      <div id="tableContainer">
+        <p class="table-placeholder">
+          Enter your parameters above and press <strong>Calculate</strong> to see results.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── How It Works ─────────────────────────────────────────── -->
+  <section class="card panel-howto">
+    <!-- Section heading -->
+    <h2>How It Works</h2>
+
+    <!-- Four numbered step cards explaining Euler's method -->
+    <div class="steps-grid">
+
+      <!-- Step 1 -->
+      <div class="step-card">
+        <div class="step-number">1</div>
+        <strong>Start at a known point</strong>
+        <p>
+          You give the calculator a starting point (x₀, y₀) on the solution curve —
+          this is your initial condition.
+        </p>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="step-card">
+        <div class="step-number">2</div>
+        <strong>Measure the slope</strong>
+        <p>
+          The differential equation dy/dx = f(x, y) tells you the <em>slope</em> of
+          the curve at any point. Plug in the current (x, y) to get the slope.
+        </p>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="step-card">
+        <div class="step-number">3</div>
+        <strong>Take a small step</strong>
+        <p>
+          Walk a tiny distance <em>h</em> along that slope to reach a new approximate
+          point. The smaller h is, the more accurate the approximation.
+        </p>
+      </div>
+
+      <!-- Step 4 -->
+      <div class="step-card">
+        <div class="step-number">4</div>
+        <strong>Repeat</strong>
+        <p>
+          Use the new point as your starting point and repeat the process as many
+          times as you like to trace the curve.
+        </p>
+      </div>
+
+    </div>
+
+    <!-- The core iterative formula rendered to match the textbook layout -->
+    <div class="formula-box">
+      <!-- Small label above -->
+      <div class="formula-intro">It is often more useful to write this as an iterative formula:</div>
+
+      <!-- y_{r+1} ≈ y_r + h (dy/dx)_r ,  r = 0, 1, 2, … -->
+      <div class="formula-line">
+        <!-- y_{r+1} -->
+        <span><span class="fv">y</span><sub>r+1</sub></span>
+
+        <!-- ≈ -->
+        <span>&nbsp;&#8776;&nbsp;</span>
+
+        <!-- y_r -->
+        <span><span class="fv">y</span><sub>r</sub></span>
+
+        <!-- + -->
+        <span>&nbsp;+&nbsp;</span>
+
+        <!-- h -->
+        <span><span class="fv">h</span></span>
+
+        <!-- ( dy/dx )_r  — stacked fraction inside big parens with subscript r -->
+        <span class="formula-paren">(</span>
+        <span class="formula-frac">
+          <span>d<span class="fv">y</span></span>
+          <span class="frac-bar"></span>
+          <span>d<span class="fv">x</span></span>
+        </span>
+        <span class="formula-paren">)</span>
+        <sub style="color:#e2e8f0; font-size:0.7rem; position:relative; top:0.5em;">r</sub>
+
+        <!-- ,  r = 0, 1, 2, … -->
+        <span class="formula-rhs">,&nbsp;&nbsp;<span class="fv">r</span> = 0, 1, 2, &hellip;</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- JavaScript – all logic lives below                        -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <script>
+
+    // ── Module-level state ────────────────────────────────────
+
+    // Euler data points computed on the last Calculate press
+    let computedPoints = [];
+    // The parsed inputs from the last Calculate press
+    let currentParams = null;
+    // The reference curve (dark purple) — computed once and only updated when the
+    // equation or initial conditions change, NOT when h or steps change via the slider
+    let referencePoints = null;
+    // The core params used to build the current reference curve (equation + x0 + y0)
+    let referenceKey = null;
+    // The step index the user last navigated to (null = none); used to draw a highlight ring
+    let highlightedStep = null;
+
+    // View transform: originX/Y = canvas pixel position of data-space (0, 0)
+    // scale = pixels per one data unit (e.g. 80 means 1 unit → 80 px)
+    let viewState = { originX: 0, originY: 0, scale: 80 };
+
+    // Pan interaction — tracks where the drag started
+    let isPanning    = false;
+    let panStartX    = 0, panStartY    = 0;  // mouse position when drag began
+    let panOriginX   = 0, panOriginY   = 0;  // viewState origin when drag began
+
+    // Touch pan — same idea for single-finger touch
+    let touchStartX  = 0, touchStartY  = 0;
+    let touchOriginX = 0, touchOriginY = 0;
+
+    // ── Utility helpers ───────────────────────────────────────
+
+    // Round a number to a fixed number of decimal places and return it as a string
+    function formatNumber(value, decimalPlaces) {
+      return value.toFixed(decimalPlaces); // toFixed converts to string with given precision
+    }
+
+    // Clean up the expression: handle ^ and implicit multiplication around x, y, and digits.
+    // Function names (sin, cos, etc.) are left completely untouched — they resolve via with(Math).
+    function preprocessExpression(expression) {
+      let expr = expression;
+
+      // Normalise common aliases so they resolve inside with(Math)
+      expr = expr.replace(/\bpi\b/gi,  'PI');   // pi → PI  (Math.PI)
+      expr = expr.replace(/\bln\b/g,   'log');  // ln → log (Math.log = natural log)
+      expr = expr.replace(/\be\b/g,    'E');    // standalone e → E (Math.E)
+      expr = expr.replace(/е/g,        'E');    // Cyrillic е → E
+
+      // ^ → ** for exponentiation
+      expr = expr.replace(/\^/g, '**');
+
+      // Digit immediately before x, y, E, or open-paren: 2x→2*x, 3(→3*(
+      expr = expr.replace(/(\d)([xyE(])/g, '$1*$2');
+
+      // Digit immediately before a function name: 2sin→2*sin, 3cos→3*cos
+      ['sin','cos','tan','asin','acos','atan','sinh','cosh','tanh',
+       'sqrt','abs','exp','log','floor','ceil'].forEach(function(fn) {
+        expr = expr.replace(new RegExp('(\\d)(' + fn + ')', 'g'), '$1*$2');
+      });
+
+      // Close-paren before a function name: )sin→)*sin, )cos→)*cos etc.
+      ['sin','cos','tan','asin','acos','atan','sinh','cosh','tanh',
+       'sqrt','abs','exp','log','floor','ceil'].forEach(function(fn) {
+        expr = expr.replace(new RegExp('\\)(' + fn + ')', 'g'), ')*$1');
+      });
+
+      // Close-paren before x, y, digit, or open-paren: )x→)*x, )(→)*(
+      expr = expr.replace(/\)([xy\d(])/g, ')*$1');
+
+      // x or y directly next to each other or next to open-paren
+      expr = expr.replace(/xy/g, 'x*y');   // xy → x*y
+      expr = expr.replace(/yx/g, 'y*x');   // yx → y*x
+      expr = expr.replace(/x\(/g, 'x*(');  // x( → x*(
+      expr = expr.replace(/y\(/g, 'y*(');  // y( → y*(
+
+      return expr;
+    }
+
+    // Evaluate f(x, y). Uses with(Math) so sin, cos, sqrt, PI, E etc. all work natively.
+    function evaluateSlope(expression, xValue, yValue) {
+      const cleaned = preprocessExpression(expression);
+      // with(Math) makes every Math property (sin, cos, tan, sqrt, PI, E, …) available
+      // as a plain name — no prefix needed. new Function does not run in strict mode
+      // so 'with' is allowed here.
+      const fn = new Function('x', 'y',
+        'with(Math){var ln=log;return(' + cleaned + ');}'
+      );
+      return fn(xValue, yValue);
+    }
+
+    // ── Core Euler's Method computation ──────────────────────
+
+    // Run Euler's method and return an array of {step, x, y, slope} objects
+    function runEulersMethod(expression, startX, startY, stepSize, totalSteps) {
+      const points = []; // start with an empty results array
+      let currentX = startX; // initialise the running x position to x₀
+      let currentY = startY; // initialise the running y position to y₀
+
+      // Compute the slope at the initial point so the table column is populated from step 0
+      const initialSlope = evaluateSlope(expression, currentX, currentY);
+      points.push({ step: 0, x: currentX, y: currentY, slope: initialSlope });
+
+      // Loop once for each requested step
+      for (let stepIndex = 1; stepIndex <= totalSteps; stepIndex++) {
+        // Evaluate the slope f(xₙ, yₙ) at the current point — this is (dy/dx)_r used to step forward
+        const slopeAtCurrent = evaluateSlope(expression, currentX, currentY);
+        // Advance y using the Euler update: yₙ₊₁ = yₙ + h · f(xₙ, yₙ)
+        currentY = currentY + stepSize * slopeAtCurrent;
+        // Advance x by one step: xₙ₊₁ = xₙ + h
+        currentX = currentX + stepSize;
+        // Compute (dy/dx)_r at the new point so the table shows the slope at every row
+        const slopeAtNew = evaluateSlope(expression, currentX, currentY);
+        // Store the new point with its slope
+        points.push({ step: stepIndex, x: currentX, y: currentY, slope: slopeAtNew });
+      }
+
+      return points; // return all computed data points
+    }
+
+    // ── Input validation ──────────────────────────────────────
+
+    // Read and validate every input field; return a params object or null on failure
+    function readAndValidateInputs() {
+      // Read the equation string directly (no numeric parsing needed here)
+      const expression = document.getElementById('inputEquation').value.trim();
+      // Parse the starting x value as a floating-point number
+      const startX = parseFloat(document.getElementById('inputX0').value);
+      // Parse the starting y value as a floating-point number
+      const startY = parseFloat(document.getElementById('inputY0').value);
+      // Parse the step size as a floating-point number
+      const stepSize = parseFloat(document.getElementById('inputH').value);
+      // Parse the number of steps as an integer
+      const totalSteps = parseInt(document.getElementById('inputSteps').value, 10);
+
+      // Reject if the equation field is empty
+      if (!expression) return { error: 'Please enter a differential equation.' };
+      // Reject if any numeric field is not a valid number
+      if (isNaN(startX) || isNaN(startY)) return { error: 'x₀ and y₀ must be valid numbers.' };
+      // Reject a zero or negative step size
+      if (isNaN(stepSize) || stepSize <= 0) return { error: 'Step size h must be a positive number.' };
+      // Reject if the number of steps is less than 1
+      if (isNaN(totalSteps) || totalSteps < 1) return { error: 'Number of steps must be at least 1.' };
+      // Cap the number of steps to avoid freezing the browser
+      if (totalSteps > 500) return { error: 'Please use 500 steps or fewer.' };
+
+      // All checks passed — return the validated parameter object
+      return { expression, startX, startY, stepSize, totalSteps };
+    }
+
+    // ── Table rendering ───────────────────────────────────────
+
+    // Build and inject an HTML table from an array of data points
+    function renderTable(points) {
+      // Start building the HTML string with the table and header row
+      let html = '<table>';
+      // Four columns: step, x, y, and (dy/dx)_r
+      // Use a span to override the thead uppercase rule so r, x, y stay lowercase
+      html += '<thead><tr>'
+            + '<th>Step (<span style="text-transform:none">r</span>)</th>'
+            + '<th><span style="text-transform:none">x</span></th>'
+            + '<th><span style="text-transform:none">y</span></th>'
+            + '<th>(<span style="text-transform:none">dy</span>/<span style="text-transform:none">dx</span>)<sub style="text-transform:none">r</sub></th>'
+            + '</tr></thead>';
+      html += '<tbody>';
+
+      // Iterate over every computed point and create a table row for each
+      for (let rowIndex = 0; rowIndex < points.length; rowIndex++) {
+        const point = points[rowIndex]; // get the current data point object
+        // Add a special CSS class to the initial row (step 0) for visual distinction
+        const rowClass = (point.step === 0) ? ' class="initial-row"' : '';
+        html += '<tr' + rowClass + '>'; // open the table row element
+        html += '<td>' + point.step + '</td>'; // step number column
+        html += '<td>' + formatNumber(point.x, 6) + '</td>'; // x value, 6 decimal places
+        html += '<td>' + formatNumber(point.y, 6) + '</td>'; // y value, 6 decimal places
+        // Show the slope (dy/dx)_r, or "—" if it is not a finite number
+        const slopeDisplay = isFinite(point.slope) ? formatNumber(point.slope, 6) : '—';
+        html += '<td>' + slopeDisplay + '</td>'; // slope column
+        html += '</tr>'; // close the table row
+      }
+
+      html += '</tbody></table>'; // close the table body and table
+      // Inject the finished HTML into the container div
+      document.getElementById('tableContainer').innerHTML = html;
+    }
+
+    // ── Canvas setup ──────────────────────────────────────────
+
+    // Resize the canvas pixel buffer to match its CSS display size (HiDPI-aware)
+    // Returns { ctx, cssWidth, cssHeight } — the 2D context and the CSS dimensions
+    function getCanvasSetup() {
+      const canvas    = document.getElementById('graphCanvas');
+      const container = canvas.parentElement;
+      const cssWidth  = container.clientWidth - 48;               // subtract card padding
+      const cssHeight = Math.max(340, Math.round(cssWidth * 0.65)); // tall enough to feel like GeoGebra
+      const dpr       = window.devicePixelRatio || 1;             // 2 on Retina screens
+      canvas.width    = cssWidth  * dpr;                          // physical pixel width
+      canvas.height   = cssHeight * dpr;                          // physical pixel height
+      canvas.style.width  = cssWidth  + 'px';                     // CSS display width
+      canvas.style.height = cssHeight + 'px';                     // CSS display height
+      const ctx = canvas.getContext('2d');                        // get the 2D drawing context
+      ctx.scale(dpr, dpr);                                        // scale so all coords are in CSS px
+      return { ctx, cssWidth, cssHeight };
+    }
+
+    // ── Coordinate conversion ─────────────────────────────────
+
+    // Convert a data-space (x, y) pair to canvas pixel coordinates
+    function dataToPixel(dataX, dataY) {
+      const px = viewState.originX + dataX * viewState.scale;   // x grows rightward
+      const py = viewState.originY - dataY * viewState.scale;   // y grows upward (flip canvas y)
+      return { px, py };
+    }
+
+    // ── View initialisation ───────────────────────────────────
+
+    // Set viewState so all Euler points are visible with generous padding
+    function initViewFromPoints(points, cssWidth, cssHeight) {
+      let minX = Infinity, maxX = -Infinity;     // start with impossible extremes
+      let minY = Infinity, maxY = -Infinity;
+      for (let i = 0; i < points.length; i++) {  // scan every point for the true min/max
+        if (points[i].x < minX) minX = points[i].x;
+        if (points[i].x > maxX) maxX = points[i].x;
+        if (points[i].y < minY) minY = points[i].y;
+        if (points[i].y > maxY) maxY = points[i].y;
+      }
+      const xPad  = Math.max((maxX - minX) * 0.55, 1.5); // generous x padding so axes are visible
+      const yPad  = Math.max((maxY - minY) * 0.55, 1.5); // generous y padding
+      const viewW = (maxX - minX) + xPad * 2;            // total visible data width
+      const viewH = (maxY - minY) + yPad * 2;            // total visible data height
+      const scaleX = cssWidth  / viewW;                   // scale that fits width
+      const scaleY = cssHeight / viewH;                   // scale that fits height
+      viewState.scale   = Math.min(scaleX, scaleY) * 0.82; // use the tighter scale with a bit of room
+      const midX = (minX + maxX) / 2;                    // data centroid x
+      const midY = (minY + maxY) / 2;                    // data centroid y
+      viewState.originX = cssWidth  / 2 - midX * viewState.scale; // pixel x that maps data 0 to screen
+      viewState.originY = cssHeight / 2 + midY * viewState.scale; // pixel y that maps data 0 to screen
+    }
+
+    // ── Grid helpers ──────────────────────────────────────────
+
+    // Choose a round grid-line spacing given the current pixels-per-unit scale
+    function niceGridStep(scale) {
+      const targetPixelGap = 75;                                // aim for ~75 px between lines
+      const rawStep  = targetPixelGap / scale;                  // convert pixel gap to data units
+      const mag      = Math.pow(10, Math.floor(Math.log10(rawStep))); // order of magnitude
+      const fraction = rawStep / mag;                           // fractional part
+      let nice;
+      if (fraction < 1.5) nice = 1;       // round down to 1×
+      else if (fraction < 3.5) nice = 2;  // round to 2×
+      else nice = 5;                       // round to 5×
+      return nice * mag;                   // return the final round step size
+    }
+
+    // Format a tick label: integer if step ≥ 1, otherwise show necessary decimals
+    function formatTickLabel(value, step) {
+      if (step >= 1) return Math.round(value).toString();           // e.g. "-2", "0", "3"
+      const decimals = Math.max(0, -Math.floor(Math.log10(step))); // count needed decimal places
+      return value.toFixed(decimals);                               // e.g. "0.5", "0.25"
+    }
+
+    // ── GeoGebra-style drawing functions ──────────────────────
+
+    // Fill the canvas with a GeoGebra-style light grey background
+    function drawBackground(ctx, W, H) {
+      ctx.fillStyle = '#f0f0f0';    // same grey as GeoGebra's default background
+      ctx.fillRect(0, 0, W, H);    // cover the entire canvas
+    }
+
+    // Draw small dotted grid lines at every grid-step interval
+    function drawGrid(ctx, W, H) {
+      const step = niceGridStep(viewState.scale); // one round-number step per ~75 px
+      ctx.strokeStyle = '#c8c8c8';               // light grey dots
+      ctx.lineWidth   = 1;
+      ctx.setLineDash([1.5, 3]);                  // 1.5 px dot, 3 px gap — GeoGebra style
+
+      // Vertical grid lines — iterate over every grid x in the visible range
+      const xDataLeft  = -viewState.originX / viewState.scale;               // leftmost visible data x
+      const xDataRight = (W - viewState.originX) / viewState.scale;          // rightmost visible data x
+      for (let gx = Math.floor(xDataLeft / step) * step; gx <= xDataRight; gx += step) {
+        const px = viewState.originX + gx * viewState.scale;                 // pixel x of this line
+        ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, H); ctx.stroke(); // draw top to bottom
+      }
+
+      // Horizontal grid lines — iterate over every grid y in the visible range
+      const yDataTop    = viewState.originY / viewState.scale;               // topmost visible data y
+      const yDataBottom = (viewState.originY - H) / viewState.scale;         // bottommost visible data y
+      for (let gy = Math.floor(yDataBottom / step) * step; gy <= yDataTop; gy += step) {
+        const py = viewState.originY - gy * viewState.scale;                 // pixel y of this line
+        ctx.beginPath(); ctx.moveTo(0, py); ctx.lineTo(W, py); ctx.stroke(); // draw left to right
+      }
+
+      ctx.setLineDash([]); // reset to solid lines for everything drawn after this
+    }
+
+    // Draw bold x and y axes with arrowheads, tick marks, and number labels
+    function drawAxes(ctx, W, H) {
+      const step = niceGridStep(viewState.scale); // reuse same step for tick positions
+      const ox   = viewState.originX;             // pixel x of data x = 0
+      const oy   = viewState.originY;             // pixel y of data y = 0
+
+      ctx.strokeStyle = '#444444';  // dark grey axes
+      ctx.lineWidth   = 2;
+      ctx.setLineDash([]);          // solid lines
+
+      // x-axis line spanning the full canvas width
+      ctx.beginPath(); ctx.moveTo(0, oy); ctx.lineTo(W, oy); ctx.stroke();
+      // x-axis right-pointing arrowhead
+      ctx.fillStyle = '#444444';
+      ctx.beginPath(); ctx.moveTo(W - 10, oy - 5); ctx.lineTo(W, oy); ctx.lineTo(W - 10, oy + 5); ctx.fill();
+
+      // y-axis line spanning the full canvas height
+      ctx.beginPath(); ctx.moveTo(ox, H); ctx.lineTo(ox, 0); ctx.stroke();
+      // y-axis upward-pointing arrowhead
+      ctx.beginPath(); ctx.moveTo(ox - 5, 10); ctx.lineTo(ox, 0); ctx.lineTo(ox + 5, 10); ctx.fill();
+
+      // Axis name labels: "x" at the right end, "y" at the top end
+      ctx.font      = 'bold 14px system-ui, sans-serif';
+      ctx.fillStyle = '#333333';
+      ctx.textAlign = 'left'; ctx.textBaseline = 'bottom'; ctx.fillText('x', W - 8, oy - 5);
+      ctx.textAlign = 'left'; ctx.textBaseline = 'top';    ctx.fillText('y', ox + 6, 5);
+
+      // x-axis tick marks and number labels
+      ctx.font      = '12px system-ui, sans-serif';
+      ctx.fillStyle = '#555555';
+      const xDataLeft  = -viewState.originX / viewState.scale;
+      const xDataRight = (W - viewState.originX) / viewState.scale;
+      for (let gx = Math.floor(xDataLeft / step) * step; gx <= xDataRight; gx += step) {
+        if (Math.abs(gx) < step * 0.01) continue;          // skip the 0 label — drawn separately
+        const px = viewState.originX + gx * viewState.scale;
+        if (px < 15 || px > W - 15) continue;              // skip ticks too close to canvas edge
+        ctx.strokeStyle = '#666666'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(px, oy - 4); ctx.lineTo(px, oy + 4); ctx.stroke(); // tick mark
+        ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+        ctx.fillText(formatTickLabel(gx, step), px, oy + 6); // number below the tick
+      }
+
+      // y-axis tick marks and number labels
+      const yDataTop    = viewState.originY / viewState.scale;
+      const yDataBottom = (viewState.originY - H) / viewState.scale;
+      for (let gy = Math.floor(yDataBottom / step) * step; gy <= yDataTop; gy += step) {
+        if (Math.abs(gy) < step * 0.01) continue;          // skip the 0 label — drawn separately
+        const py = viewState.originY - gy * viewState.scale;
+        if (py < 15 || py > H - 15) continue;              // skip ticks too close to canvas edge
+        ctx.strokeStyle = '#666666'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(ox - 4, py); ctx.lineTo(ox + 4, py); ctx.stroke(); // tick mark
+        ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+        ctx.fillText(formatTickLabel(gy, step), ox - 7, py); // number to the left of the tick
+      }
+
+      // Draw the "0" origin label if the origin is visible on screen
+      if (ox > 20 && ox < W - 20 && oy > 20 && oy < H - 20) {
+        ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+        ctx.fillText('0', ox - 5, oy + 5); // bottom-left of the origin crossing
+      }
+    }
+
+    // Build and store the reference curve points — called only when equation/x0/y0 change
+    function buildReferenceCurve(params) {
+      // Cover a generous x range (4× the initial Euler run) so the curve stays visible
+      // even when the user slides h to a very different value
+      const xRange    = params.totalSteps * params.stepSize * 4;
+      const fineCount = 2000;                                   // always 2000 points for a smooth line
+      const fineH     = xRange / fineCount;                    // tiny step size
+      try {
+        const pts = runEulersMethod(params.expression, params.startX, params.startY, fineH, fineCount);
+        referencePoints = pts.filter(pt => isFinite(pt.y));    // keep only finite values
+      } catch (e) {
+        referencePoints = [];                                   // equation threw — nothing to show
+      }
+    }
+
+    // Draw the stored reference curve (dark purple) — never recomputed by the slider
+    function drawReferenceCurve(ctx, W, H) {
+      if (!referencePoints || referencePoints.length < 2) return; // nothing stored yet
+
+      ctx.strokeStyle = '#5c2d82';   // dark purple
+      ctx.lineWidth   = 2.5;
+      ctx.setLineDash([]);
+      ctx.lineJoin    = 'round';
+      ctx.beginPath();
+      const { px: fx, py: fy } = dataToPixel(referencePoints[0].x, referencePoints[0].y);
+      ctx.moveTo(fx, fy);
+      for (let i = 1; i < referencePoints.length; i++) {
+        const { px, py } = dataToPixel(referencePoints[i].x, referencePoints[i].y);
+        if (px < -100 || px > W + 100 || py < -300 || py > H + 300) continue; // skip off-screen
+        ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+    }
+
+    // Draw the Euler approximation as a light-blue polyline with white-outlined circle markers
+    function drawEulerCurve(ctx, points) {
+      if (!points || points.length < 2) return;              // nothing to do
+      const finite = points.filter(pt => isFinite(pt.y));   // only draw valid points
+      if (finite.length < 2) return;
+
+      // Draw the connecting polyline
+      ctx.strokeStyle = '#6fa8dc';   // light blue — GeoGebra's Euler approximation colour
+      ctx.lineWidth   = 2;
+      ctx.setLineDash([]);
+      ctx.lineJoin    = 'round';
+      ctx.beginPath();
+      const { px: fx, py: fy } = dataToPixel(finite[0].x, finite[0].y);
+      ctx.moveTo(fx, fy);            // start at the initial point
+      for (let i = 1; i < finite.length; i++) {
+        const { px, py } = dataToPixel(finite[i].x, finite[i].y);
+        ctx.lineTo(px, py);          // connect to the next Euler point
+      }
+      ctx.stroke();
+
+      // Draw a white-filled, blue-outlined circle at each step point
+      for (let i = 0; i < finite.length; i++) {
+        const { px, py } = dataToPixel(finite[i].x, finite[i].y);
+        ctx.beginPath();
+        ctx.arc(px, py, 5, 0, Math.PI * 2); // circle of radius 5 px
+        ctx.fillStyle   = '#ffffff';         // white fill like GeoGebra's step dots
+        ctx.fill();
+        ctx.strokeStyle = '#4a86c8';         // slightly darker blue outline
+        ctx.lineWidth   = 2;
+        ctx.stroke();
+      }
+    }
+
+    // Draw the initial condition as a red filled circle with an "A" label
+    function drawInitialPoint(ctx, params) {
+      if (!params) return;                                // nothing to draw without params
+      const { px, py } = dataToPixel(params.startX, params.startY); // convert to screen
+      ctx.beginPath();
+      ctx.arc(px, py, 9, 0, Math.PI * 2);               // big red circle
+      ctx.fillStyle = '#e8463a';                         // GeoGebra red
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2;    // white ring so it pops off the curve
+      ctx.stroke();
+      ctx.font      = 'bold 14px system-ui, sans-serif';
+      ctx.fillStyle = '#e8463a';                         // red label text
+      ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+      ctx.fillText('A', px + 13, py - 3);               // "A" label offset to the top-right
+    }
+
+    // Master redraw — clears the canvas and repaints all layers in order
+    function redrawGraph() {
+      const { ctx, cssWidth, cssHeight } = getCanvasSetup();     // resize buffer if needed
+      drawBackground(ctx, cssWidth, cssHeight);                   // 1. grey fill
+      drawGrid(ctx, cssWidth, cssHeight);                         // 2. dotted grid
+      drawAxes(ctx, cssWidth, cssHeight);                         // 3. bold axes + ticks
+      if (currentParams) {
+        drawReferenceCurve(ctx, cssWidth, cssHeight);                // 4. dark purple smooth curve (stored)
+        drawEulerCurve(ctx, computedPoints);                         // 5. light blue Euler steps
+        drawInitialPoint(ctx, currentParams);                        // 6. red "A" dot on top
+        drawHighlightRing(ctx);                                      // 7. gold ring on the goto point
+      }
+    }
+
+    // Draw a gold pulsing ring around the step the user navigated to
+    function drawHighlightRing(ctx) {
+      if (highlightedStep === null) return;                          // nothing to highlight
+      const point = computedPoints[highlightedStep];                 // look up the step's data
+      if (!point || !isFinite(point.y)) return;                     // skip if point is invalid
+      const { px, py } = dataToPixel(point.x, point.y);            // convert to screen coords
+      // Outer glow ring
+      ctx.beginPath();
+      ctx.arc(px, py, 14, 0, Math.PI * 2);                         // large radius for visibility
+      ctx.strokeStyle = 'rgba(255, 200, 0, 0.35)';                  // soft gold glow
+      ctx.lineWidth   = 6;
+      ctx.stroke();
+      // Solid gold ring on top of the glow
+      ctx.beginPath();
+      ctx.arc(px, py, 9, 0, Math.PI * 2);                          // tighter ring
+      ctx.strokeStyle = '#f5a500';                                   // solid gold
+      ctx.lineWidth   = 2.5;
+      ctx.stroke();
+    }
+
+    // Draw the GeoGebra-style empty graph (grid + axes, no data) on first load
+    function renderEmptyGraph() {
+      const { ctx, cssWidth, cssHeight } = getCanvasSetup(); // set up canvas dimensions
+      viewState.originX = cssWidth  * 0.38;                  // put origin ~40% from left
+      viewState.originY = cssHeight * 0.60;                  // put origin ~60% from top
+      viewState.scale   = Math.round(cssHeight / 6);         // auto-scale so ±3 units are visible
+      drawBackground(ctx, cssWidth, cssHeight);              // grey background
+      drawGrid(ctx, cssWidth, cssHeight);                    // dotted grid
+      drawAxes(ctx, cssWidth, cssHeight);                    // axes with labels
+    }
+
+    // ── Pan & zoom event handlers ─────────────────────────────
+
+    // Begin a mouse-drag pan when the user presses down on the canvas
+    function onMouseDown(event) {
+      isPanning  = true;                       // flag that a drag is in progress
+      panStartX  = event.clientX;              // record where the mouse was pressed
+      panStartY  = event.clientY;
+      panOriginX = viewState.originX;          // remember the origin position at drag start
+      panOriginY = viewState.originY;
+      event.target.style.cursor = 'grabbing'; // show a "grabbing hand" cursor
+    }
+
+    // Update the view as the mouse moves during a drag
+    function onMouseMove(event) {
+      if (!isPanning) return;                       // ignore if not currently dragging
+      viewState.originX = panOriginX + (event.clientX - panStartX); // shift origin by drag delta
+      viewState.originY = panOriginY + (event.clientY - panStartY);
+      redrawGraph();                                // repaint immediately
+    }
+
+    // End the drag on mouse release
+    function onMouseUp(event) {
+      isPanning = false;
+      event.target.style.cursor = 'grab'; // revert to the open-hand cursor
+    }
+
+    // Zoom in or out centred on the current mouse position using the scroll wheel
+    function onWheel(event) {
+      event.preventDefault();                           // stop the page from scrolling
+      const canvas   = document.getElementById('graphCanvas');
+      const rect     = canvas.getBoundingClientRect(); // canvas position on the page
+      const mouseX   = event.clientX - rect.left;      // mouse x relative to canvas
+      const mouseY   = event.clientY - rect.top;       // mouse y relative to canvas
+      const zoomFactor = event.deltaY < 0 ? 1.12 : 1 / 1.12; // scroll up = zoom in
+      // Shift the origin so the point under the cursor stays fixed after zooming
+      viewState.originX = mouseX + (viewState.originX - mouseX) * zoomFactor;
+      viewState.originY = mouseY + (viewState.originY - mouseY) * zoomFactor;
+      viewState.scale   = viewState.scale * zoomFactor; // update the scale
+      redrawGraph();
+    }
+
+    // Begin a single-finger touch pan
+    function onTouchStart(event) {
+      if (event.touches.length !== 1) return;      // only handle single-finger touches
+      touchStartX  = event.touches[0].clientX;
+      touchStartY  = event.touches[0].clientY;
+      touchOriginX = viewState.originX;
+      touchOriginY = viewState.originY;
+    }
+
+    // Update origin during a finger drag
+    function onTouchMove(event) {
+      if (event.touches.length !== 1) return;
+      event.preventDefault();                      // prevent page scroll while panning
+      viewState.originX = touchOriginX + (event.touches[0].clientX - touchStartX);
+      viewState.originY = touchOriginY + (event.touches[0].clientY - touchStartY);
+      redrawGraph();
+    }
+
+    // Attach all canvas interaction listeners once the script runs
+    (function attachCanvasEvents() {
+      const canvas = document.getElementById('graphCanvas');
+      canvas.style.cursor = 'grab';                                           // default cursor
+      canvas.addEventListener('mousedown',  onMouseDown);
+      canvas.addEventListener('mousemove',  onMouseMove);
+      canvas.addEventListener('mouseup',    onMouseUp);
+      canvas.addEventListener('mouseleave', onMouseUp);                       // end drag if mouse leaves
+      canvas.addEventListener('wheel',      onWheel, { passive: false });     // need preventDefault
+      canvas.addEventListener('touchstart', onTouchStart, { passive: true });
+      canvas.addEventListener('touchmove',  onTouchMove,  { passive: false }); // need preventDefault
+    })();
+
+    // ── Main handler: Calculate button ───────────────────────
+
+    // Called when the user clicks the Calculate button; coordinates all actions
+    function handleCalculate() {
+      const errorElement = document.getElementById('errorMsg'); // the error paragraph element
+      errorElement.textContent = '';                            // clear any previous error
+
+      // Read and validate all inputs; stop immediately if there is a problem
+      const params = readAndValidateInputs();
+      if (params.error) {
+        errorElement.textContent = params.error;
+        return; // exit early — do not proceed with calculations
+      }
+
+      // Try running the computation; catch errors from bad equation expressions
+      try {
+        computedPoints = runEulersMethod(
+          params.expression,
+          params.startX,
+          params.startY,
+          params.stepSize,
+          params.totalSteps
+        );
+      } catch (evaluationError) {
+        errorElement.textContent = 'Error evaluating equation: ' + evaluationError.message;
+        return; // stop here — do not try to render bad data
+      }
+
+      // Remember whether this is the very first calculation (before we overwrite currentParams)
+      const isFirstCalculation = (currentParams === null);
+
+      // Check if the core parameters (equation, x₀, y₀) have changed — if so the reference
+      // curve must be rebuilt. Changes to h or steps alone do NOT trigger a rebuild.
+      const newKey = params.expression + '|' + params.startX + '|' + params.startY;
+      const coreChanged = (newKey !== referenceKey);
+
+      // Store the validated params so redrawGraph can draw the reference curve later
+      currentParams   = params;
+      highlightedStep = null; // clear any previous goto highlight when recalculating
+      document.getElementById('navMsg').textContent = ''; // clear the goto feedback message
+
+      // Rebuild the reference curve only when equation or initial conditions changed
+      if (coreChanged) {
+        referenceKey = newKey;           // remember what the current reference is based on
+        buildReferenceCurve(params);     // recompute the dark purple curve
+      }
+
+      // Warn the user if any y value is non-finite (NaN or ±Infinity)
+      const hasInvalidValues = computedPoints.some(point => !isFinite(point.y));
+      if (hasInvalidValues) {
+        errorElement.textContent = 'Warning: y became infinite or NaN. Try a smaller step size.';
+      }
+
+      // Build and inject the results table
+      renderTable(computedPoints);
+
+      const finitePoints = computedPoints.filter(point => isFinite(point.y));
+      if (finitePoints.length > 1) {
+        // Only auto-fit the view on the very first calculation — after that preserve whatever
+        // zoom and pan the user has set, so the slider and repeat Calculate never jump the view
+        if (isFirstCalculation) {
+          const { cssWidth, cssHeight } = getCanvasSetup();
+          initViewFromPoints(finitePoints, cssWidth, cssHeight); // fit view to data once only
+        }
+        redrawGraph(); // repaint at the current (unchanged) view position
+      }
+    }
+
+    // ── Step-size slider ──────────────────────────────────────
+
+    // Map the 0-100 slider position to h on a log scale: position 0 → h=0.01, position 100 → h=1.0
+    // A log scale means small h values (high accuracy) get plenty of room to the left
+    function sliderPositionToH(position) {
+      const minLog = Math.log10(0.01); // log10(0.01) = -2  — finest step
+      const maxLog = Math.log10(5);   // log10(10)   =  1  — coarsest step
+      const logH   = minLog + (position / 100) * (maxLog - minLog); // interpolate in log space
+      return Math.pow(10, logH);       // convert back from log to the actual h value
+    }
+
+    // Convert h back to a 0-100 slider position (used to sync the slider when the number input changes)
+    function hToSliderPosition(h) {
+      const minLog = Math.log10(0.01);
+      const maxLog = Math.log10(5);
+      const logH   = Math.log10(h);
+      return Math.round(((logH - minLog) / (maxLog - minLog)) * 100); // return integer 0-100
+    }
+
+    // Called every time the slider moves — updates h, syncs the number input, and recalculates
+    function handleSliderH(position) {
+      const newH = sliderPositionToH(position);              // compute h from slider position
+      document.getElementById('inputH').value = newH.toFixed(4); // update the number input
+      document.getElementById('sliderHReadout').textContent = newH.toFixed(4); // update readout
+      if (currentParams) handleCalculate();                  // auto-recalculate if data already exists
+    }
+
+    // Sync the slider whenever the user types a value directly into the number input
+    document.getElementById('inputH').addEventListener('input', function () {
+      const h = parseFloat(this.value);                      // read the typed value
+      if (!isNaN(h) && h > 0 && h <= 5) {                   // only sync if h is in slider range
+        document.getElementById('sliderH').value = hToSliderPosition(h); // move the thumb
+        document.getElementById('sliderHReadout').textContent = h.toFixed(4); // update readout
+      }
+    });
+
+    // ── Goto handler ──────────────────────────────────────────
+
+    // Pan and zoom the graph so the requested step point is centred on screen
+    function handleGoto() {
+      const navMsg   = document.getElementById('navMsg');           // feedback message element
+      const rawValue = document.getElementById('inputGotoStep').value.trim(); // raw input text
+      navMsg.style.color = '#6b7280';                               // reset to neutral grey
+
+      // Check that a calculation has been run first
+      if (computedPoints.length === 0) {
+        navMsg.style.color = '#ef4444';
+        navMsg.textContent = 'Run Calculate first!';
+        return; // nothing to navigate to yet
+      }
+
+      const stepIndex = parseInt(rawValue, 10);                     // parse as integer
+      const maxStep   = computedPoints.length - 1;                  // last valid step index
+
+      // Validate the input is a number and within the computed range
+      if (isNaN(stepIndex) || stepIndex < 0 || stepIndex > maxStep) {
+        navMsg.style.color = '#ef4444';
+        navMsg.textContent = 'Enter a step between 0 and ' + maxStep + '.';
+        return; // invalid — do not navigate
+      }
+
+      const point = computedPoints[stepIndex];                      // look up the target point
+      if (!isFinite(point.y)) {                                     // guard against blown-up values
+        navMsg.style.color = '#ef4444';
+        navMsg.textContent = 'Step ' + stepIndex + ' has an invalid y value.';
+        return;
+      }
+
+      // Set the highlighted step so the gold ring is drawn on redraw
+      highlightedStep = stepIndex;
+
+      // Build a local bounding box that includes both the Euler neighbours AND the reference
+      // curve in that x-window, so the zoom adapts to however steep the function is.
+      const { cssWidth, cssHeight } = getCanvasSetup();
+
+      // Collect Euler points ±3 steps around the target so there is context on both sides
+      const loIdx = Math.max(0, stepIndex - 3);
+      const hiIdx = Math.min(computedPoints.length - 1, stepIndex + 3);
+      const localEuler = [];
+      for (let i = loIdx; i <= hiIdx; i++) {
+        if (isFinite(computedPoints[i].y)) localEuler.push(computedPoints[i]); // skip blown-up values
+      }
+
+      // Determine the x range covered by those neighbour points
+      const xLo = localEuler[0].x;                                  // leftmost x in the window
+      const xHi = localEuler[localEuler.length - 1].x;              // rightmost x in the window
+
+      // Run the fine reference curve over the full range and collect only points inside the window
+      const localRef = [];
+      const totalX   = currentParams.totalSteps * currentParams.stepSize; // total x span of the run
+      const fineH    = totalX / Math.min(2000, currentParams.totalSteps * 60); // same fine step as drawReferenceCurve
+      try {
+        const refAll = runEulersMethod(
+          currentParams.expression, currentParams.startX, currentParams.startY,
+          fineH, Math.round(totalX / fineH)
+        );
+        for (let i = 0; i < refAll.length; i++) {
+          const pt = refAll[i];
+          // Keep points that fall inside the local x window (with a small margin)
+          if (pt.x >= xLo - currentParams.stepSize * 0.1 &&
+              pt.x <= xHi + currentParams.stepSize * 0.1 &&
+              isFinite(pt.y)) {
+            localRef.push(pt);
+          }
+        }
+      } catch (e) { /* if the equation throws, fall back to Euler points only */ }
+
+      // Combine both sets and find the overall local bounding box
+      const allLocal = localEuler.concat(localRef);
+      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+      for (let i = 0; i < allLocal.length; i++) {
+        if (allLocal[i].x < minX) minX = allLocal[i].x;
+        if (allLocal[i].x > maxX) maxX = allLocal[i].x;
+        if (allLocal[i].y < minY) minY = allLocal[i].y;
+        if (allLocal[i].y > maxY) maxY = allLocal[i].y;
+      }
+
+      // Add padding so the curves are not flush against the canvas edges
+      const xPad = Math.max((maxX - minX) * 0.35, currentParams.stepSize * 0.4);
+      const yPad = Math.max((maxY - minY) * 0.35, 0.05);
+
+      // Compute the scale that makes both x and y ranges fit the canvas
+      const viewW  = (maxX - minX) + xPad * 2;                     // padded data width
+      const viewH  = (maxY - minY) + yPad * 2;                     // padded data height
+      const scaleX = cssWidth  / viewW;                             // pixels per unit for x fit
+      const scaleY = cssHeight / viewH;                             // pixels per unit for y fit
+      viewState.scale   = Math.min(scaleX, scaleY) * 0.88;         // use the tighter axis, with breathing room
+      const midX = (minX + maxX) / 2;                              // centre of the local bounding box
+      const midY = (minY + maxY) / 2;
+      viewState.originX = cssWidth  / 2 - midX * viewState.scale;  // pan so the midpoint is centred
+      viewState.originY = cssHeight / 2 + midY * viewState.scale;
+
+      redrawGraph();                                                 // repaint at the new zoom and position
+
+      // Show a friendly confirmation message with the coordinates
+      navMsg.textContent = 'Landed on step ' + stepIndex +
+        ' → (' + point.x.toFixed(4) + ', ' + point.y.toFixed(4) + ')';
+    }
+
+    // ── Initialisation on page load ───────────────────────────
+
+    // Draw the empty GeoGebra-style graph as soon as the page loads
+    renderEmptyGraph();
+
+    // On window resize: recalculate canvas size and redraw whatever is showing
+    window.addEventListener('resize', function () {
+      if (!currentParams) {
+        renderEmptyGraph(); // no data yet — just redraw the empty grid
+      } else {
+        redrawGraph();      // redraw the full graph at the new size
+      }
+    });
+
+    // Pressing Enter in any input field triggers Calculate
+    document.querySelectorAll('.field input').forEach(function (inputElement) {
+      inputElement.addEventListener('keydown', function (keyEvent) {
+        if (keyEvent.key === 'Enter') handleCalculate();
+      });
+    });
+
+  </script>
+
+  <!-- Page footer -->
+  <footer style="text-align:center; padding: 24px 16px 32px; font-size:0.82rem; color:#9ca3af;">
+    Built by <strong style="color:#4f6ef7;">Emilio Rosa-Ainsworth</strong>
+  </footer>
+</body>
+</html>

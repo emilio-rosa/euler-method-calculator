@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Euler's Method — Real-World Applications</title>
+  <style>
+
+    /* ── Reset & base ─────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #f5f6fa;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      color: #1e2230;
+      line-height: 1.7;
+    }
+
+    /* ── Nav bar ──────────────────────────────────────────── */
+    .topbar {
+      background: #1e2230;
+      padding: 14px 28px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 10px rgba(0,0,0,.25);
+    }
+
+    .topbar a {
+      color: #94a3b8;
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 5px 10px;
+      border-radius: 6px;
+      transition: background 0.15s, color 0.15s;
+    }
+    .topbar a:hover       { background: #374151; color: #fff; }
+    .topbar a.home-link   { color: #fff; }
+    .topbar .sep          { color: #4b5563; }
+
+    /* ── Hero ─────────────────────────────────────────────── */
+    .hero {
+      background: linear-gradient(135deg, #1e2230 0%, #2d3a5e 100%);
+      color: #fff;
+      padding: 64px 28px 56px;
+      text-align: center;
+    }
+
+    .hero h1 {
+      font-size: 2.4rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      line-height: 1.2;
+    }
+
+    .hero h1 .accent { color: #7aa2f7; }
+
+    .hero p {
+      margin-top: 14px;
+      font-size: 1.05rem;
+      color: #94a3b8;
+      max-width: 580px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* App navigation pills below the hero */
+    .app-nav {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 28px;
+    }
+
+    .app-nav a {
+      padding: 8px 18px;
+      border-radius: 100px;
+      border: 1.5px solid rgba(255,255,255,.2);
+      color: #e2e8f0;
+      text-decoration: none;
+      font-size: 0.88rem;
+      font-weight: 600;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .app-nav a:hover { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.4); }
+
+    /* ── Page body ────────────────────────────────────────── */
+    .page-body {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 16px 80px;
+    }
+
+    /* ── Application blocks ───────────────────────────────── */
+    .app-block {
+      margin-bottom: 56px;
+    }
+
+    /* Coloured banner strip at the top of each application */
+    .app-banner {
+      border-radius: 14px 14px 0 0;
+      padding: 28px 32px 24px;
+      color: #fff;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .app-banner::after {
+      content: attr(data-emoji);
+      position: absolute;
+      right: 28px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 4rem;
+      opacity: 0.18;
+      line-height: 1;
+    }
+
+    .app-banner.finance  { background: linear-gradient(135deg, #1a3a5c, #2d6a9f); }
+    .app-banner.physics  { background: linear-gradient(135deg, #1a4a2e, #2d8a5e); }
+    .app-banner.biology  { background: linear-gradient(135deg, #4a1a3a, #8a2d6a); }
+
+    .app-tag {
+      display: inline-block;
+      background: rgba(255,255,255,.2);
+      border-radius: 100px;
+      padding: 3px 12px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .app-banner h2 {
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+      line-height: 1.25;
+    }
+
+    .app-banner p {
+      margin-top: 6px;
+      font-size: 0.9rem;
+      color: rgba(255,255,255,.75);
+      max-width: 540px;
+    }
+
+    /* Card body below the banner */
+    .app-body {
+      background: #fff;
+      border-radius: 0 0 14px 14px;
+      padding: 28px 32px;
+      box-shadow: 0 4px 20px rgba(0,0,0,.08);
+    }
+
+    .app-body h3 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #1e2230;
+      margin: 22px 0 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-size: 0.78rem;
+    }
+
+    .app-body h3:first-child { margin-top: 0; }
+
+    .app-body p {
+      color: #374151;
+      font-size: 0.93rem;
+      margin-bottom: 10px;
+    }
+
+    .app-body p:last-child { margin-bottom: 0; }
+
+    /* ── Sub-topic cards (e.g. Black-Scholes, Heston) ──────── */
+    .subtopic-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 14px;
+      margin-top: 16px;
+    }
+
+    .subtopic-card {
+      border-radius: 10px;
+      padding: 18px;
+      border: 1.5px solid #e5e7eb;
+    }
+
+    .subtopic-card .st-icon {
+      font-size: 1.5rem;
+      margin-bottom: 8px;
+    }
+
+    .subtopic-card h4 {
+      font-size: 0.92rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: #1e2230;
+    }
+
+    .subtopic-card p {
+      font-size: 0.82rem !important;
+      color: #4b5563 !important;
+      margin-bottom: 0 !important;
+      line-height: 1.55;
+    }
+
+    .subtopic-card.blue   { background: #eff6ff; border-color: #bfdbfe; }
+    .subtopic-card.green  { background: #f0fdf4; border-color: #bbf7d0; }
+    .subtopic-card.purple { background: #faf5ff; border-color: #e9d5ff; }
+    .subtopic-card.amber  { background: #fffbeb; border-color: #fde68a; }
+    .subtopic-card.rose   { background: #fff1f2; border-color: #fecdd3; }
+
+    /* ── Formula blocks ───────────────────────────────────── */
+    .formula-block {
+      background: #1e2230;
+      color: #e2e8f0;
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin: 14px 0;
+      font-family: 'Courier New', monospace;
+      font-size: 0.88rem;
+      line-height: 1.9;
+      overflow-x: auto;
+    }
+
+    .formula-block .label {
+      font-size: 0.72rem;
+      color: #64748b;
+      font-family: system-ui, sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    .fv  { color: #93c5fd; }  /* variables */
+    .fop { color: #f9a8d4; }  /* operators / symbols */
+    .fc  { color: #86efac; }  /* constants / Greek */
+    .fd  { color: #fde68a; }  /* differentials */
+
+    /* Stacked fraction */
+    .frac {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 0.85rem;
+      line-height: 1.2;
+      vertical-align: middle;
+      margin: 0 2px;
+    }
+    .frac .bar { width: 100%; border-top: 1.5px solid #e2e8f0; margin: 2px 0; }
+
+    /* ── Callout box ──────────────────────────────────────── */
+    .callout {
+      border-radius: 10px;
+      padding: 14px 18px;
+      margin: 16px 0;
+      font-size: 0.88rem;
+    }
+
+    .callout.blue   { background: #eff6ff; border-left: 4px solid #3b82f6; color: #1e3a5f; }
+    .callout.green  { background: #f0fdf4; border-left: 4px solid #22c55e; color: #14532d; }
+    .callout.purple { background: #faf5ff; border-left: 4px solid #a855f7; color: #3b0764; }
+    .callout.amber  { background: #fffbeb; border-left: 4px solid #f59e0b; color: #451a03; }
+
+    .callout strong { font-weight: 700; }
+
+    /* ── Step-by-step list ────────────────────────────────── */
+    .steps-list {
+      list-style: none;
+      margin: 14px 0;
+      padding: 0;
+    }
+
+    .steps-list li {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      padding: 10px 0;
+      border-bottom: 1px solid #f0f0f0;
+      font-size: 0.9rem;
+      color: #374151;
+    }
+
+    .steps-list li:last-child { border-bottom: none; }
+
+    .steps-list .step-dot {
+      flex-shrink: 0;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #fff;
+      margin-top: 2px;
+    }
+
+    .steps-list .step-dot.blue   { background: #3b82f6; }
+    .steps-list .step-dot.green  { background: #22c55e; }
+    .steps-list .step-dot.purple { background: #a855f7; }
+
+    /* ── Inline code pill ─────────────────────────────────── */
+    code {
+      background: #f1f5f9;
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.85em;
+      color: #0f172a;
+    }
+
+    /* ── Divider between app blocks ───────────────────────── */
+    .app-block + .app-block { border-top: none; }
+
+    /* ── Footer nav ───────────────────────────────────────── */
+    .footer-nav {
+      max-width: 900px;
+      margin: 0 auto 40px;
+      padding: 0 16px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .footer-nav a {
+      padding: 10px 20px;
+      border-radius: 9px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+
+    .footer-nav a.primary { background: #4f6ef7; color: #fff; }
+    .footer-nav a.primary:hover { background: #3b5bdb; }
+    .footer-nav a.secondary { background: #fff; color: #374151; border: 1.5px solid #e5e7eb; }
+    .footer-nav a.secondary:hover { background: #f3f4f6; }
+
+    @media (max-width: 600px) {
+      .app-banner { padding: 22px 20px 18px; }
+      .app-body   { padding: 20px 18px; }
+      .hero h1    { font-size: 1.7rem; }
+      .app-banner::after { display: none; }
+    }
+
+  </style>
+</head>
+<body>
+
+  <!-- ── Top navigation bar ───────────────────────────────── -->
+  <nav class="topbar">
+    <a class="home-link" href="euler_calculator.html">← Calculator</a>
+    <span class="sep">|</span>
+    <a href="explanation.html">How It Works</a>
+    <span class="sep">|</span>
+    <a href="applications.html" style="color:#7aa2f7">Applications</a>
+  </nav>
+
+  <!-- ── Hero ─────────────────────────────────────────────── -->
+  <div class="hero">
+    <h1>Euler's Method in the<br><span class="accent">Real World</span></h1>
+    <p>
+      The same iterative idea that powers your calculator also drives billion-dollar
+      financial models, rocket trajectories, and epidemic forecasts.
+    </p>
+    <div class="app-nav">
+      <a href="#finance">💹 Finance</a>
+      <a href="#physics">🚀 Physics</a>
+      <a href="#biology">🧬 Biology</a>
+    </div>
+  </div>
+
+  <div class="page-body">
+
+    <!-- ════════════════════════════════════════════════════ -->
+    <!-- APPLICATION 1 — FINANCE                             -->
+    <!-- ════════════════════════════════════════════════════ -->
+    <div class="app-block" id="finance">
+
+      <div class="app-banner finance" data-emoji="💹">
+        <div class="app-tag">Application 1 — Finance</div>
+        <h2>Pricing Derivatives &amp; Modelling Asset Prices</h2>
+        <p>
+          From Black-Scholes to the Heston model, modern quantitative finance
+          depends on numerically solving stochastic differential equations —
+          and Euler is almost always where you start.
+        </p>
+      </div>
+
+      <div class="app-body">
+
+        <h3>The Problem</h3>
+        <p>
+          A stock price does not move smoothly — it jumps, drifts, and behaves
+          randomly. Mathematicians model this randomness with a
+          <strong>stochastic differential equation (SDE)</strong>, which is like
+          an ODE but with a noise term added. You cannot solve most SDEs with
+          a pen and paper, so you simulate thousands of possible price paths
+          numerically.
+        </p>
+
+        <!-- Three sub-topic cards -->
+        <div class="subtopic-grid">
+
+          <div class="subtopic-card blue">
+            <div class="st-icon">📈</div>
+            <h4>Black-Scholes Model (1973)</h4>
+            <p>
+              Assumes a stock price S follows geometric Brownian motion —
+              a constant drift μ (expected return) plus random noise σ
+              (volatility). It gives a closed-form option price formula,
+              but its derivation relies on solving the underlying SDE numerically
+              to check boundary conditions and Greeks.
+            </p>
+          </div>
+
+          <div class="subtopic-card purple">
+            <div class="st-icon">🌀</div>
+            <h4>Heston Model (1993)</h4>
+            <p>
+              Extends Black-Scholes by making volatility itself random —
+              it follows its own mean-reverting SDE. No closed-form solution
+              exists for most derivative prices under Heston, so numerical
+              simulation (via Euler-Maruyama) is essential.
+            </p>
+          </div>
+
+          <div class="subtopic-card green">
+            <div class="st-icon">🎲</div>
+            <h4>Euler-Maruyama Method</h4>
+            <p>
+              The direct stochastic extension of Euler's method to SDEs.
+              It is the simplest and most widely used method for simulating
+              random processes in finance, physics, and biology. You
+              almost certainly used a version of it in your first quant
+              finance interview problem.
+            </p>
+          </div>
+
+        </div>
+
+        <!-- Black-Scholes SDE -->
+        <h3>The Black-Scholes SDE</h3>
+        <p>
+          Under Black-Scholes, a stock price <em>S</em> obeys:
+        </p>
+
+        <div class="formula-block">
+          <span class="label">Black-Scholes geometric Brownian motion</span>
+          d<span class="fv">S</span> = <span class="fc">μ</span><span class="fv">S</span> d<span class="fd">t</span> + <span class="fc">σ</span><span class="fv">S</span> d<span class="fd">W</span><sub>t</sub>
+        </div>
+
+        <p>
+          where <code>μ</code> is the drift (expected return), <code>σ</code> is the
+          volatility, and <code>dWₜ</code> is a <strong>Wiener process</strong> —
+          pure random noise scaled by √dt. The term σS dWₜ is what makes this
+          stochastic and unsolvable by standard Euler.
+        </p>
+
+        <!-- Heston model -->
+        <h3>The Heston Model — Two Coupled SDEs</h3>
+        <p>
+          Heston adds a second SDE for the variance <em>v</em> (volatility squared),
+          which mean-reverts toward a long-run level θ:
+        </p>
+
+        <div class="formula-block">
+          <span class="label">Heston model — coupled stochastic system</span>
+          d<span class="fv">S</span> = <span class="fc">μ</span><span class="fv">S</span> d<span class="fd">t</span> + √<span class="fv">v</span> · <span class="fv">S</span> d<span class="fd">W</span><sup>(1)</sup><sub>t</sub>
+          <br>
+          d<span class="fv">v</span> = <span class="fc">κ</span>(<span class="fc">θ</span> − <span class="fv">v</span>) d<span class="fd">t</span> + <span class="fc">ξ</span>√<span class="fv">v</span> d<span class="fd">W</span><sup>(2)</sup><sub>t</sub>
+        </div>
+
+        <p>
+          <code>κ</code> is the mean-reversion speed, <code>θ</code> is the long-run
+          variance, <code>ξ</code> is the volatility of volatility ("vol of vol"), and
+          the two Wiener processes W⁽¹⁾ and W⁽²⁾ are correlated with coefficient ρ.
+          This captures the famous <em>volatility smile</em> that Black-Scholes cannot.
+        </p>
+
+        <!-- Euler-Maruyama -->
+        <h3>Euler-Maruyama: Euler's Method for Stochastic Equations</h3>
+        <p>
+          For a general SDE <code>dX = f(X,t) dt + g(X,t) dW</code>,
+          Euler-Maruyama discretises it at time steps Δt:
+        </p>
+
+        <div class="formula-block">
+          <span class="label">Euler-Maruyama update rule</span>
+          <span class="fv">X</span><sub>n+1</sub> = <span class="fv">X</span><sub>n</sub> + <span class="fc">f</span>(<span class="fv">X</span><sub>n</sub>, <span class="fd">t</span><sub>n</sub>) Δ<span class="fd">t</span> + <span class="fc">g</span>(<span class="fv">X</span><sub>n</sub>, <span class="fd">t</span><sub>n</sub>) · √Δ<span class="fd">t</span> · <span class="fv">Z</span><sub>n</sub>
+        </div>
+
+        <p>
+          where <code>Zₙ ~ N(0,1)</code> is a fresh standard-normal random draw at
+          each step. The first two terms are <em>exactly</em> standard Euler's method
+          applied to the drift. The third term adds the scaled random noise.
+          Applied to Black-Scholes this becomes:
+        </p>
+
+        <div class="formula-block">
+          <span class="label">Euler-Maruyama applied to Black-Scholes</span>
+          <span class="fv">S</span><sub>n+1</sub> = <span class="fv">S</span><sub>n</sub> + <span class="fc">μ</span><span class="fv">S</span><sub>n</sub> Δ<span class="fd">t</span> + <span class="fc">σ</span><span class="fv">S</span><sub>n</sub> · √Δ<span class="fd">t</span> · <span class="fv">Z</span><sub>n</sub>
+        </div>
+
+        <div class="callout blue">
+          <strong>Connection to your calculator:</strong>
+          Remove the <code>σSₙ · √Δt · Zₙ</code> noise term and you have exactly the
+          deterministic Euler step your calculator computes. Euler-Maruyama is
+          literally Euler's method with one extra line of randomness.
+        </div>
+
+        <h3>How a Monte Carlo Option Pricer Works</h3>
+        <ul class="steps-list">
+          <li>
+            <span class="step-dot blue">1</span>
+            <span>Simulate 10,000 stock price paths from today to expiry using Euler-Maruyama.</span>
+          </li>
+          <li>
+            <span class="step-dot blue">2</span>
+            <span>For each path, compute the option payoff at expiry (e.g. max(S−K, 0) for a call).</span>
+          </li>
+          <li>
+            <span class="step-dot blue">3</span>
+            <span>Average the 10,000 payoffs and discount back to today at the risk-free rate.</span>
+          </li>
+          <li>
+            <span class="step-dot blue">4</span>
+            <span>That average discounted payoff is the fair option price. More paths = more accuracy, just like smaller h in Euler.</span>
+          </li>
+        </ul>
+
+        <div class="callout amber">
+          <strong>Industry context:</strong> Investment banks run Euler-Maruyama
+          simulations millions of times a day for risk management (Value at Risk),
+          exotic option pricing, and regulatory stress tests. The J.P. Morgan
+          RiskMetrics framework and most Bloomberg derivative pricing models
+          use variants of this exact method.
+        </div>
+
+      </div>
+    </div>
+
+
+    <!-- ════════════════════════════════════════════════════ -->
+    <!-- APPLICATION 2 — PHYSICS                             -->
+    <!-- ════════════════════════════════════════════════════ -->
+    <div class="app-block" id="physics">
+
+      <div class="app-banner physics" data-emoji="🚀">
+        <div class="app-tag">Application 2 — Physics &amp; Engineering</div>
+        <h2>Orbital Mechanics &amp; Rocket Trajectories</h2>
+        <p>
+          NASA and SpaceX use numerical ODE solvers — built on the same ideas
+          as Euler's method — to plan every burn, orbit insertion, and landing.
+        </p>
+      </div>
+
+      <div class="app-body">
+
+        <h3>The Problem</h3>
+        <p>
+          Newton's second law gives you acceleration, not position directly.
+          To know <em>where</em> a spacecraft is you have to integrate twice:
+          acceleration → velocity → position. For anything beyond a simple
+          two-body problem (Earth + satellite) there is no closed-form solution,
+          so you step through time numerically.
+        </p>
+
+        <div class="subtopic-grid">
+
+          <div class="subtopic-card green">
+            <div class="st-icon">🛰️</div>
+            <h4>Orbital Mechanics</h4>
+            <p>
+              A satellite's position and velocity are governed by a system of
+              six coupled ODEs (x, y, z positions and velocities). Euler's method
+              — or more accurately its higher-order descendants like Runge-Kutta 4
+              — steps these forward in time to predict where the satellite will be
+              hours from now.
+            </p>
+          </div>
+
+          <div class="subtopic-card amber">
+            <div class="st-icon">🌍</div>
+            <h4>N-Body Gravity</h4>
+            <p>
+              When multiple bodies pull on each other (Sun + planets + moons),
+              the forces update at every step. The Solar System simulator on
+              your phone is doing Euler-style time-stepping over millions of
+              small Δt intervals.
+            </p>
+          </div>
+
+        </div>
+
+        <!-- Newton's equations as an ODE system -->
+        <h3>Newton's Law as a First-Order System</h3>
+        <p>
+          Newton gives us <code>F = ma</code>, so <code>a = F/m</code>.
+          Acceleration is the second derivative of position, so we split it into
+          two first-order ODEs — exactly the kind Euler's method handles:
+        </p>
+
+        <div class="formula-block">
+          <span class="label">Two coupled first-order ODEs for one dimension</span>
+          d<span class="fv">x</span>/d<span class="fd">t</span> = <span class="fv">v</span>                          <span style="color:#4b5563">  ← velocity is the rate of change of position</span>
+          <br>
+          d<span class="fv">v</span>/d<span class="fd">t</span> = <span class="fc">F</span>(<span class="fv">x</span>, <span class="fv">v</span>, <span class="fd">t</span>) / <span class="fc">m</span>   <span style="color:#4b5563">  ← force divided by mass gives acceleration</span>
+        </div>
+
+        <p>
+          Euler's method steps both equations forward simultaneously:
+          <code>xₙ₊₁ = xₙ + vₙ Δt</code> and <code>vₙ₊₁ = vₙ + (F/m) Δt</code>.
+          For a satellite orbiting Earth, F is the gravitational force
+          <code>−GMm/r²</code> pointing toward Earth's centre.
+        </p>
+
+        <div class="callout green">
+          <strong>Why not plain Euler for real missions?</strong>
+          Euler's method has first-order accuracy. For a 6-month Mars transit,
+          even tiny per-step errors compound into errors of millions of kilometres.
+          NASA uses high-order Runge-Kutta methods and symplectic integrators,
+          but they are all extensions of the same step-and-repeat idea that
+          Euler invented.
+        </div>
+
+        <h3>The Pendulum — A Nonlinear ODE</h3>
+        <p>
+          A simple pendulum of length L has the nonlinear ODE
+          <code>d²θ/dt² = −(g/L) sin θ</code>. Split into two first-order equations
+          and apply Euler's method — this is a classic textbook example where you
+          can watch the approximation drift away from the true oscillation as
+          step size increases.
+        </p>
+
+        <div class="formula-block">
+          <span class="label">Pendulum as a first-order system</span>
+          d<span class="fv">θ</span>/d<span class="fd">t</span> = <span class="fv">ω</span>                              <span style="color:#4b5563">  ← angular velocity</span>
+          <br>
+          d<span class="fv">ω</span>/d<span class="fd">t</span> = −(<span class="fc">g</span>/<span class="fc">L</span>) sin(<span class="fv">θ</span>)     <span style="color:#4b5563">  ← angular acceleration</span>
+        </div>
+
+        <div class="callout amber">
+          <strong>Try it in the calculator:</strong> Enter <code>−sin(x)</code>
+          (approximating θ ≈ x) with x₀ = 0, y₀ = 0.5, and watch how the curve
+          changes as you slide h. At large h the oscillation grows unboundedly —
+          a classic Euler instability.
+        </div>
+
+      </div>
+    </div>
+
+
+    <!-- ════════════════════════════════════════════════════ -->
+    <!-- APPLICATION 3 — BIOLOGY / EPIDEMIOLOGY              -->
+    <!-- ════════════════════════════════════════════════════ -->
+    <div class="app-block" id="biology">
+
+      <div class="app-banner biology" data-emoji="🧬">
+        <div class="app-tag">Application 3 — Biology &amp; Epidemiology</div>
+        <h2>Epidemic Modelling &amp; Population Dynamics</h2>
+        <p>
+          The COVID-19 forecasts that appeared on government dashboards every day
+          were produced by numerical ODE solvers running models that are
+          direct descendants of Euler's method.
+        </p>
+      </div>
+
+      <div class="app-body">
+
+        <h3>The Problem</h3>
+        <p>
+          How does a disease spread through a population? How do predators and prey
+          keep each other in check? These processes are described by systems of coupled
+          first-order ODEs — which Euler's method can step through time directly.
+        </p>
+
+        <div class="subtopic-grid">
+
+          <div class="subtopic-card purple">
+            <div class="st-icon">🦠</div>
+            <h4>SIR Epidemic Model</h4>
+            <p>
+              Divides a population into Susceptible (S), Infected (I), and Recovered (R).
+              Three coupled ODEs describe how people move between groups over time.
+              Used to model flu, measles, COVID-19, and every major pandemic forecast.
+            </p>
+          </div>
+
+          <div class="subtopic-card rose">
+            <div class="st-icon">🐺</div>
+            <h4>Lotka-Volterra Predator-Prey</h4>
+            <p>
+              Models the cyclical rise and fall of two species — for example wolves
+              and rabbits. The rabbit population explodes when wolves are scarce,
+              which then feeds a wolf boom, which crashes the rabbits, which then
+              starves the wolves. Eternal cycle, described by two ODEs.
+            </p>
+          </div>
+
+        </div>
+
+        <!-- SIR model equations -->
+        <h3>The SIR Model Equations</h3>
+        <p>
+          Let <code>S</code>, <code>I</code>, <code>R</code> be the fractions of
+          the population in each compartment (so S + I + R = 1). The model is:
+        </p>
+
+        <div class="formula-block">
+          <span class="label">SIR — three coupled first-order ODEs</span>
+          d<span class="fv">S</span>/d<span class="fd">t</span> = −<span class="fc">β</span><span class="fv">S</span><span class="fv">I</span>                    <span style="color:#4b5563">  ← susceptibles are infected at rate β</span>
+          <br>
+          d<span class="fv">I</span>/d<span class="fd">t</span> = <span class="fc">β</span><span class="fv">S</span><span class="fv">I</span> − <span class="fc">γ</span><span class="fv">I</span>          <span style="color:#4b5563">  ← new infections minus recoveries (rate γ)</span>
+          <br>
+          d<span class="fv">R</span>/d<span class="fd">t</span> = <span class="fc">γ</span><span class="fv">I</span>                     <span style="color:#4b5563">  ← recovered = removed from infectious pool</span>
+        </div>
+
+        <p>
+          Applying Euler's method to the <em>I</em> equation:
+          <code>Iₙ₊₁ = Iₙ + (βSₙIₙ − γIₙ) · Δt</code> — exactly the same
+          update rule as your calculator, just with a different f(x, y).
+        </p>
+
+        <h3>The Basic Reproduction Number R₀</h3>
+        <p>
+          The ratio <code>R₀ = β/γ</code> tells you whether an epidemic will grow
+          or die out. If R₀ > 1 the infected compartment grows; if R₀ &lt; 1 it
+          shrinks. COVID-19 had an R₀ of roughly 2.5–3 for the original strain
+          and 8–15 for Omicron. Every lockdown policy was designed to push R₀
+          below 1 by reducing β.
+        </p>
+
+        <div class="callout purple">
+          <strong>Real-world scale:</strong> The Imperial College London model
+          that triggered the UK's first COVID lockdown in March 2020 was
+          a highly extended SIR model numerically integrated forward in time
+          using exactly this stepping approach, run on a supercomputer for
+          hundreds of thousands of population sub-groups simultaneously.
+        </div>
+
+        <h3>Lotka-Volterra (Predator-Prey)</h3>
+
+        <div class="formula-block">
+          <span class="label">Lotka-Volterra — predator-prey system</span>
+          d<span class="fv">x</span>/d<span class="fd">t</span> = <span class="fc">α</span><span class="fv">x</span> − <span class="fc">β</span><span class="fv">x</span><span class="fv">y</span>          <span style="color:#4b5563">  ← prey grow at α, eaten at rate βy</span>
+          <br>
+          d<span class="fv">y</span>/d<span class="fd">t</span> = <span class="fc">δ</span><span class="fv">x</span><span class="fv">y</span> − <span class="fc">γ</span><span class="fv">y</span>          <span style="color:#4b5563">  ← predators grow eating prey, die at rate γ</span>
+        </div>
+
+        <div class="callout green">
+          <strong>Try the prey equation in the calculator:</strong>
+          Enter <code>0.6*y − 0.4*x*y</code> with x₀ = 0, y₀ = 2, h = 0.1.
+          You will see the first half-cycle of the population oscillation —
+          the same curve ecologists use to model real wildlife data.
+        </div>
+
+        <h3>Why Euler Is Still Used Here</h3>
+        <ul class="steps-list">
+          <li>
+            <span class="step-dot purple">1</span>
+            <span><strong>Speed of prototyping.</strong> When building a new model, scientists code up Euler first to check the equations make sense before switching to a more accurate solver.</span>
+          </li>
+          <li>
+            <span class="step-dot purple">2</span>
+            <span><strong>Stochastic SIR.</strong> Real outbreaks are random — especially in small populations. Adding noise to the SIR equations (like Euler-Maruyama does for finance) gives stochastic epidemic models that match observed data far better.</span>
+          </li>
+          <li>
+            <span class="step-dot purple">3</span>
+            <span><strong>Real-time forecasting.</strong> Euler's method is simple enough to run in a spreadsheet, which means public health teams in low-resource settings can still use it during an outbreak without a supercomputer.</span>
+          </li>
+        </ul>
+
+      </div>
+    </div>
+
+  </div><!-- end page-body -->
+
+  <!-- ── Footer navigation ────────────────────────────────── -->
+  <div class="footer-nav">
+    <a class="primary"   href="euler_calculator.html">← Back to Calculator</a>
+    <a class="secondary" href="explanation.html">📖 How the Calculation Works</a>
+  </div>
+
+
+  <!-- Page footer -->
+  <footer style="text-align:center; padding: 24px 16px 32px; font-size:0.82rem; color:#9ca3af;">
+    Built by <strong style="color:#4f6ef7;">Emilio Rosa-Ainsworth</strong>
+  </footer>
+</body>
+</html>
