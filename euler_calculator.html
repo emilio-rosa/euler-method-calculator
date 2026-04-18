@@ -1145,8 +1145,9 @@
     // Uses its own fine loop that NEVER stops early — it skips singular/infinite values and
     // resumes so the curve continues on the other side of a singularity if possible.
     function buildReferenceCurve(params) {
-      const xRange    = params.totalSteps * params.stepSize;
-      const fineCount = 5000;
+      // Always extend the reference curve well beyond the Euler steps so it looks continuous
+      const xRange    = Math.max(params.totalSteps * params.stepSize * 10, 200);
+      const fineCount = 8000;
       const fineH     = Math.max(xRange / fineCount, 1e-5);
       referencePoints = [];
       let cx = params.startX;
