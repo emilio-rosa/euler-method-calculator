@@ -767,8 +767,10 @@
 
     // ── Core Euler's Method computation ──────────────────────
 
-    // Run Euler's method and return an array of {step, x, y, slope} objects
+    // Run Euler's method and return an array of {step, x, y, slope} objects.
+    // Stops early if the solution diverges (NaN, Infinity, or |y| beyond threshold).
     function runEulersMethod(expression, startX, startY, stepSize, totalSteps) {
+      const DIVERGE_THRESHOLD = 1e8; // stop if |y| exceeds this — solution has blown up
       const points = []; // start with an empty results array
       let currentX = startX; // initialise the running x position to x₀
       let currentY = startY; // initialise the running y position to y₀
@@ -781,10 +783,14 @@
       for (let stepIndex = 1; stepIndex <= totalSteps; stepIndex++) {
         // Evaluate the slope f(xₙ, yₙ) at the current point — this is (dy/dx)_r used to step forward
         const slopeAtCurrent = evaluateSlope(expression, currentX, currentY);
+        // If the slope itself is not finite we have hit a singularity — stop here
+        if (!isFinite(slopeAtCurrent)) break;
         // Advance y using the Euler update: yₙ₊₁ = yₙ + h · f(xₙ, yₙ)
         currentY = currentY + stepSize * slopeAtCurrent;
         // Advance x by one step: xₙ₊₁ = xₙ + h
         currentX = currentX + stepSize;
+        // If y is no longer finite or has grown astronomically, the solution has diverged — stop
+        if (!isFinite(currentY) || Math.abs(currentY) > DIVERGE_THRESHOLD) break;
         // Compute (dy/dx)_r at the new point so the table shows the slope at every row
         const slopeAtNew = evaluateSlope(expression, currentX, currentY);
         // Store the new point with its slope
@@ -1031,22 +1037,25 @@
       }
     }
 
-    // Build and store the reference curve points — called only when equation/x0/y0 change
+    // Build and store the reference curve points — called only when equation/x0/y0 change.
+    // Uses a fine step over a sensible x range; stops automatically if the solution diverges.
     function buildReferenceCurve(params) {
-      // Cover a generous x range (4× the initial Euler run) so the curve stays visible
-      // even when the user slides h to a very different value
-      const xRange    = params.totalSteps * params.stepSize * 4;
+      // Cap x-range at 50 units regardless of step count, so we never trace 1000s of units
+      // into a singularity. The runEulersMethod divergence guard will also stop it early.
+      const xRange    = Math.min(params.totalSteps * params.stepSize, 50);
       const fineCount = 2000;                                   // always 2000 points for a smooth line
-      const fineH     = xRange / fineCount;                    // tiny step size
+      const fineH     = Math.max(xRange / fineCount, 1e-4);    // tiny step size, never below 0.0001
       try {
         const pts = runEulersMethod(params.expression, params.startX, params.startY, fineH, fineCount);
-        referencePoints = pts.filter(pt => isFinite(pt.y));    // keep only finite values
+        // Keep only finite values and points whose |y| is within a reasonable display range
+        referencePoints = pts.filter(pt => isFinite(pt.y) && Math.abs(pt.y) < 1e6);
       } catch (e) {
         referencePoints = [];                                   // equation threw — nothing to show
       }
     }
 
-    // Draw the stored reference curve (dark purple) — never recomputed by the slider
+    // Draw the stored reference curve (dark purple) — never recomputed by the slider.
+    // Lifts the pen on large jumps so a singularity does not draw a rogue vertical line.
     function drawReferenceCurve(ctx, W, H) {
       if (!referencePoints || referencePoints.length < 2) return; // nothing stored yet
 
@@ -1055,12 +1064,21 @@
       ctx.setLineDash([]);
       ctx.lineJoin    = 'round';
       ctx.beginPath();
-      const { px: fx, py: fy } = dataToPixel(referencePoints[0].x, referencePoints[0].y);
-      ctx.moveTo(fx, fy);
-      for (let i = 1; i < referencePoints.length; i++) {
+      let penDown = false;
+      for (let i = 0; i < referencePoints.length; i++) {
         const { px, py } = dataToPixel(referencePoints[i].x, referencePoints[i].y);
-        if (px < -100 || px > W + 100 || py < -300 || py > H + 300) continue; // skip off-screen
-        ctx.lineTo(px, py);
+        const offScreen = px < -200 || px > W + 200 || py < -200 || py > H + 200;
+        if (offScreen) {
+          penDown = false; // lift pen — don't connect across huge off-screen gaps
+          continue;
+        }
+        // If the vertical jump in pixels is very large, lift the pen to avoid a near-vertical stroke
+        if (penDown && i > 0) {
+          const { py: prevPy } = dataToPixel(referencePoints[i-1].x, referencePoints[i-1].y);
+          if (Math.abs(py - prevPy) > H * 1.5) { penDown = false; }
+        }
+        if (!penDown) { ctx.moveTo(px, py); penDown = true; }
+        else          { ctx.lineTo(px, py); }
       }
       ctx.stroke();
     }
@@ -1278,10 +1296,15 @@
         buildReferenceCurve(params);     // recompute the dark purple curve
       }
 
-      // Warn the user if any y value is non-finite (NaN or ±Infinity)
-      const hasInvalidValues = computedPoints.some(point => !isFinite(point.y));
-      if (hasInvalidValues) {
-        errorElement.textContent = 'Warning: y became infinite or NaN. Try a smaller step size.';
+      // Warn the user if the solution diverged before all steps were completed
+      const diverged = computedPoints.length < params.totalSteps + 1;
+      if (diverged) {
+        const lastStep = computedPoints[computedPoints.length - 1];
+        errorElement.style.color = '#f59e0b'; // amber — informational, not a hard error
+        errorElement.textContent = 'Solution diverged near step ' + lastStep.step +
+          ' (singularity reached). Showing ' + lastStep.step + ' valid steps.';
+      } else {
+        errorElement.style.color = '#ef4444'; // reset to red for real errors
       }
 
       // Build and inject the results table
