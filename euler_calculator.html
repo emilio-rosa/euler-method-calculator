@@ -264,21 +264,32 @@
 
     /* ── Math keyboard ────────────────────────────────────────── */
 
-    /* Toggle button that sits to the right of the equation label */
-    .keyboard-toggle {
-      float: right;
-      padding: 2px 8px;
-      font-size: 0.72rem;
-      font-weight: 600;
-      color: #4f6ef7;
-      background: #eef0fe;
-      border: 1.5px solid #c7cefb;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: background 0.15s;
-      line-height: 1.6;
+    /* Wrapper so the keyboard icon can be positioned inside the input */
+    .input-with-icon {
+      position: relative;
     }
-    .keyboard-toggle:hover { background: #dde1fd; }
+    .input-with-icon input {
+      padding-right: 36px; /* make room for the icon */
+      width: 100%;
+    }
+
+    /* Keyboard icon button sitting inside the right edge of the input */
+    .keyboard-toggle {
+      position: absolute;
+      right: 6px;
+      top: 50%;
+      transform: translateY(-50%);
+      padding: 3px 5px;
+      font-size: 1rem;
+      line-height: 1;
+      color: #9ca3af;
+      background: none;
+      border: none;
+      cursor: pointer;
+      transition: color 0.15s;
+    }
+    .keyboard-toggle:hover  { color: #4f6ef7; }
+    .keyboard-toggle.active { color: #4f6ef7; }
 
     /* The keyboard panel itself — hidden by default */
     .math-keyboard {
@@ -554,12 +565,13 @@
 
       <!-- Input: the differential equation dy/dx as a JS expression -->
       <div class="field">
-        <label for="inputEquation">
-          dy/dx = f(x, y)
-          <button class="keyboard-toggle" type="button" onclick="toggleKeyboard()">⌨ keyboard</button>
-        </label>
-        <input id="inputEquation" type="text" value="x + y"
-               placeholder="e.g. sin(x) + y" />
+        <label for="inputEquation">dy/dx = f(x, y)</label>
+        <div class="input-with-icon">
+          <input id="inputEquation" type="text" value="x + y"
+                 placeholder="e.g. sin(x) + y" />
+          <button class="keyboard-toggle" id="kbToggleBtn" type="button"
+                  onclick="toggleKeyboard()" title="Math keyboard">⌨</button>
+        </div>
 
         <!-- Math keyboard panel — shown/hidden by toggleKeyboard() -->
         <div class="math-keyboard" id="mathKeyboard">
@@ -1584,10 +1596,10 @@
 
     // Toggle the keyboard panel open/closed
     function toggleKeyboard() {
-      const kb  = document.getElementById('mathKeyboard');
-      const btn = document.querySelector('.keyboard-toggle');
+      const kb   = document.getElementById('mathKeyboard');
+      const btn  = document.getElementById('kbToggleBtn');
       const open = kb.classList.toggle('open');
-      btn.textContent = open ? '✕ close' : '⌨ keyboard';
+      btn.classList.toggle('active', open);
     }
 
     // Insert a string at the cursor position in the equation input, then refocus
