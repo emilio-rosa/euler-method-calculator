@@ -1142,20 +1142,31 @@
     }
 
     // Build and store the reference curve points — called only when equation/x0/y0 change.
-    // Uses very fine steps over the full requested x range for maximum accuracy.
-    // runEulersMethod's divergence guard stops it automatically at singularities.
+    // Uses its own fine loop that NEVER stops early — it skips singular/infinite values and
+    // resumes so the curve continues on the other side of a singularity if possible.
     function buildReferenceCurve(params) {
-      // Cover the same x range the user asked for (steps × h), spread over many fine points
       const xRange    = params.totalSteps * params.stepSize;
-      const fineCount = 5000;                                   // 5000 points for a smooth, accurate line
-      const fineH     = Math.max(xRange / fineCount, 1e-5);    // very small step, never below 0.00001
+      const fineCount = 5000;
+      const fineH     = Math.max(xRange / fineCount, 1e-5);
+      referencePoints = [];
+      let cx = params.startX;
+      let cy = params.startY;
+      referencePoints.push({ x: cx, y: cy });
       try {
-        const pts = runEulersMethod(params.expression, params.startX, params.startY, fineH, fineCount);
-        // Keep only finite values — divergence detection in runEulersMethod stops the loop early
-        referencePoints = pts.filter(pt => isFinite(pt.y));
-      } catch (e) {
-        referencePoints = [];                                   // equation threw — nothing to show
-      }
+        for (let i = 1; i <= fineCount; i++) {
+          const slope = evaluateSlope(params.expression, cx, cy);
+          const nextY = cy + fineH * slope;
+          cx += fineH;
+          // If the new y is not usable, record the x position but skip drawing (NaN guard)
+          // then continue — the curve may recover after the singularity
+          if (!isFinite(nextY) || !isFinite(slope)) {
+            cy = NaN; // mark as broken so drawReferenceCurve lifts the pen here
+          } else {
+            cy = nextY;
+          }
+          referencePoints.push({ x: cx, y: cy });
+        }
+      } catch (e) { /* ignore eval errors mid-curve */ }
     }
 
     // Draw the stored reference curve (dark purple) — never recomputed by the slider.
@@ -1170,16 +1181,19 @@
       ctx.beginPath();
       let penDown = false;
       for (let i = 0; i < referencePoints.length; i++) {
-        const { px, py } = dataToPixel(referencePoints[i].x, referencePoints[i].y);
+        const pt = referencePoints[i];
+        // Lift pen at NaN/Infinity points (singularity gap) — curve may resume after
+        if (!isFinite(pt.y)) { penDown = false; continue; }
+        const { px, py } = dataToPixel(pt.x, pt.y);
         const offScreen = px < -200 || px > W + 200 || py < -200 || py > H + 200;
-        if (offScreen) {
-          penDown = false; // lift pen — don't connect across huge off-screen gaps
-          continue;
-        }
-        // If the vertical jump in pixels is very large, lift the pen to avoid a near-vertical stroke
+        if (offScreen) { penDown = false; continue; }
+        // Lift pen on huge vertical pixel jumps to avoid spike lines across the canvas
         if (penDown && i > 0) {
-          const { py: prevPy } = dataToPixel(referencePoints[i-1].x, referencePoints[i-1].y);
-          if (Math.abs(py - prevPy) > H * 1.5) { penDown = false; }
+          const prev = referencePoints[i - 1];
+          if (isFinite(prev.y)) {
+            const { py: prevPy } = dataToPixel(prev.x, prev.y);
+            if (Math.abs(py - prevPy) > H * 1.5) { penDown = false; }
+          }
         }
         if (!penDown) { ctx.moveTo(px, py); penDown = true; }
         else          { ctx.lineTo(px, py); }
