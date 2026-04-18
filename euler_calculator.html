@@ -262,6 +262,68 @@
       font-variant-numeric: tabular-nums; /* stop the number jumping around */
     }
 
+    /* ── Math keyboard ────────────────────────────────────────── */
+
+    /* Toggle button that sits to the right of the equation label */
+    .keyboard-toggle {
+      float: right;
+      padding: 2px 8px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: #4f6ef7;
+      background: #eef0fe;
+      border: 1.5px solid #c7cefb;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.15s;
+      line-height: 1.6;
+    }
+    .keyboard-toggle:hover { background: #dde1fd; }
+
+    /* The keyboard panel itself — hidden by default */
+    .math-keyboard {
+      display: none;
+      margin-top: 8px;
+      background: #f3f4f6;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 8px;
+    }
+    .math-keyboard.open { display: block; }
+
+    /* Each row of buttons */
+    .kb-row {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 5px;
+    }
+    .kb-row:last-child { margin-bottom: 0; }
+
+    /* Individual key button */
+    .kb-btn {
+      flex: 1;
+      padding: 6px 4px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #1e2230;
+      background: #ffffff;
+      border: 1.5px solid #d1d5db;
+      border-radius: 7px;
+      cursor: pointer;
+      transition: background 0.12s, border-color 0.12s;
+      text-align: center;
+      white-space: nowrap;
+    }
+    .kb-btn:hover  { background: #eef0fe; border-color: #a5b4fc; color: #4f6ef7; }
+    .kb-btn:active { background: #dde1fd; }
+
+    /* Wider buttons for functions */
+    .kb-btn.wide { flex: 1.4; }
+
+    /* Backspace key — red tint */
+    .kb-btn.backspace { color: #ef4444; border-color: #fca5a5; }
+    .kb-btn.backspace:hover { background: #fef2f2; border-color: #ef4444; color: #ef4444; }
+
     /* Small red error message shown below the button when input is invalid */
     .error-msg {
       margin-top: 10px;
@@ -492,9 +554,51 @@
 
       <!-- Input: the differential equation dy/dx as a JS expression -->
       <div class="field">
-        <label for="inputEquation">dy/dx = f(x, y)</label>
+        <label for="inputEquation">
+          dy/dx = f(x, y)
+          <button class="keyboard-toggle" type="button" onclick="toggleKeyboard()">⌨ keyboard</button>
+        </label>
         <input id="inputEquation" type="text" value="x + y"
                placeholder="e.g. sin(x) + y" />
+
+        <!-- Math keyboard panel — shown/hidden by toggleKeyboard() -->
+        <div class="math-keyboard" id="mathKeyboard">
+          <!-- Row 1: variables, power, brackets -->
+          <div class="kb-row">
+            <button class="kb-btn" type="button" onclick="kbInsert('x')">x</button>
+            <button class="kb-btn" type="button" onclick="kbInsert('y')">y</button>
+            <button class="kb-btn" type="button" onclick="kbInsert('^')">xʸ</button>
+            <button class="kb-btn" type="button" onclick="kbInsert('(')"> ( </button>
+            <button class="kb-btn" type="button" onclick="kbInsert(')')"> ) </button>
+            <button class="kb-btn backspace" type="button" onclick="kbBackspace()">⌫</button>
+          </div>
+          <!-- Row 2: trig functions -->
+          <div class="kb-row">
+            <button class="kb-btn wide" type="button" onclick="kbInsert('sin(')">sin</button>
+            <button class="kb-btn wide" type="button" onclick="kbInsert('cos(')">cos</button>
+            <button class="kb-btn wide" type="button" onclick="kbInsert('tan(')">tan</button>
+            <button class="kb-btn wide" type="button" onclick="kbInsert('asin(')">sin⁻¹</button>
+            <button class="kb-btn wide" type="button" onclick="kbInsert('acos(')">cos⁻¹</button>
+            <button class="kb-btn wide" type="button" onclick="kbInsert('atan(')">tan⁻¹</button>
+          </div>
+          <!-- Row 3: roots, logs, exp -->
+          <div class="kb-row">
+            <button class="kb-btn wide" type="button" onclick="kbInsert('sqrt(')">√</button>
+            <button class="kb-btn wide" type="button" onclick="kbInsert('ln(')">ln</button>
+            <button class="kb-btn wide" type="button" onclick="kbInsert('log(')">log</button>
+            <button class="kb-btn wide" type="button" onclick="kbInsert('exp(')">eˣ</button>
+            <button class="kb-btn wide" type="button" onclick="kbInsert('abs(')">|x|</button>
+          </div>
+          <!-- Row 4: constants and operators -->
+          <div class="kb-row">
+            <button class="kb-btn" type="button" onclick="kbInsert('pi')">π</button>
+            <button class="kb-btn" type="button" onclick="kbInsert('e')">e</button>
+            <button class="kb-btn" type="button" onclick="kbInsert('^2')">x²</button>
+            <button class="kb-btn" type="button" onclick="kbInsert('^3')">x³</button>
+            <button class="kb-btn" type="button" onclick="kbInsert('/')"> ÷ </button>
+            <button class="kb-btn" type="button" onclick="kbInsert('*')"> × </button>
+          </div>
+        </div>
       </div>
 
       <!-- Input: starting x value (x₀) -->
@@ -1459,6 +1563,46 @@
       // Show a friendly confirmation message with the coordinates
       navMsg.textContent = 'Landed on step ' + stepIndex +
         ' → (' + point.x.toFixed(4) + ', ' + point.y.toFixed(4) + ')';
+    }
+
+    // ── Math keyboard ─────────────────────────────────────────
+
+    // Toggle the keyboard panel open/closed
+    function toggleKeyboard() {
+      const kb  = document.getElementById('mathKeyboard');
+      const btn = document.querySelector('.keyboard-toggle');
+      const open = kb.classList.toggle('open');
+      btn.textContent = open ? '✕ close' : '⌨ keyboard';
+    }
+
+    // Insert a string at the cursor position in the equation input, then refocus
+    function kbInsert(text) {
+      const input = document.getElementById('inputEquation');
+      input.focus();
+      const start = input.selectionStart;
+      const end   = input.selectionEnd;
+      const val   = input.value;
+      input.value = val.slice(0, start) + text + val.slice(end);
+      // Move cursor to just after what we inserted (or after the open paren for functions)
+      const newPos = start + text.length;
+      input.setSelectionRange(newPos, newPos);
+    }
+
+    // Delete the character immediately before the cursor (backspace behaviour)
+    function kbBackspace() {
+      const input = document.getElementById('inputEquation');
+      input.focus();
+      const start = input.selectionStart;
+      const end   = input.selectionEnd;
+      if (start === end && start > 0) {
+        // No selection — delete the one character before cursor
+        input.value = input.value.slice(0, start - 1) + input.value.slice(end);
+        input.setSelectionRange(start - 1, start - 1);
+      } else if (start !== end) {
+        // Selection exists — delete the selected text
+        input.value = input.value.slice(0, start) + input.value.slice(end);
+        input.setSelectionRange(start, start);
+      }
     }
 
     // ── Initialisation on page load ───────────────────────────
