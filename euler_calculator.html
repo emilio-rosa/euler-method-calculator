@@ -1038,17 +1038,17 @@
     }
 
     // Build and store the reference curve points — called only when equation/x0/y0 change.
-    // Uses a fine step over a sensible x range; stops automatically if the solution diverges.
+    // Uses very fine steps over the full requested x range for maximum accuracy.
+    // runEulersMethod's divergence guard stops it automatically at singularities.
     function buildReferenceCurve(params) {
-      // Cap x-range at 50 units regardless of step count, so we never trace 1000s of units
-      // into a singularity. The runEulersMethod divergence guard will also stop it early.
-      const xRange    = Math.min(params.totalSteps * params.stepSize, 50);
-      const fineCount = 2000;                                   // always 2000 points for a smooth line
-      const fineH     = Math.max(xRange / fineCount, 1e-4);    // tiny step size, never below 0.0001
+      // Cover the same x range the user asked for (steps × h), spread over many fine points
+      const xRange    = params.totalSteps * params.stepSize;
+      const fineCount = 5000;                                   // 5000 points for a smooth, accurate line
+      const fineH     = Math.max(xRange / fineCount, 1e-5);    // very small step, never below 0.00001
       try {
         const pts = runEulersMethod(params.expression, params.startX, params.startY, fineH, fineCount);
-        // Keep only finite values and points whose |y| is within a reasonable display range
-        referencePoints = pts.filter(pt => isFinite(pt.y) && Math.abs(pt.y) < 1e6);
+        // Keep only finite values — divergence detection in runEulersMethod stops the loop early
+        referencePoints = pts.filter(pt => isFinite(pt.y));
       } catch (e) {
         referencePoints = [];                                   // equation threw — nothing to show
       }
